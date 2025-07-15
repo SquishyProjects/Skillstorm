@@ -341,7 +341,7 @@ function update() {
     drawPlayer();
     drawEnemies();
     updateBullets();
-    updateParticles?.(); // caso você tenha partículas
+    
 
     // ⬇️ Atualiza e desenha projéteis do boss
     bossProjectiles.forEach((p, i) => {
