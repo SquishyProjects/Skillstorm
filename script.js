@@ -1,19 +1,27 @@
 // Tela inicial
+// Controle da tela inicial
 const startScreen = document.getElementById("start-screen");
 const playButton = document.getElementById("play-button");
+
+playButton.onclick = () => {
+  startScreen.style.display = "none";
+  startGame();
+};
+
+function startGame() {
+  nextWave();
+  update();
+  setInterval(() => {
+    if (gameRunning) shootAtNearestEnemy();
+  }, 500);
+}
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-playButton.onclick = () => {
-  startScreen.style.display = "none";
-  nextWave();  // Começa o jogo na wave 1
-  update();    // Inicia o loop do jogo
-  setInterval(() => {
-    if (gameRunning) shootAtNearestEnemy();
-  }, 500);
-};
+
 
 
 let player = {
