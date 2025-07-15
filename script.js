@@ -188,40 +188,6 @@ function updateParticles() {
   });
 }
 
-function update() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (gameRunning) {
-    movePlayer();
-    moveEnemies();
-    drawPlayer();
-    drawEnemies();
-    updateBullets();
-    updateParticles();
-    
-for (let i = enemies.length - 1; i >= 0; i--) {
-  if (enemies[i].health <= 0) {
-    if (fragmentationEnabled) {
-      spawnFragments(enemies[i].x, enemies[i].y);
-    }
-    enemies.splice(i, 1);
-  }
-}
-
-
-    if (enemies.length === 0) {
-      nextWave();
-    }
-
-    if (player.health <= 0) {
-      alert("Game Over! Refresh to restart.");
-      gameRunning = false;
-    }
-  }
-
-  drawHUD();
-  requestAnimationFrame(update);
-}
 
 
 
