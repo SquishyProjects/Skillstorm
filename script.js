@@ -37,6 +37,7 @@ let player = {
 let bulletSpeed = 6;
 let enemies = [];
 let bullets = [];
+let particles = [];
 let wave = 0;
 let keys = {};
 let gameRunning = true;
@@ -127,6 +128,16 @@ function updateBullets() {
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
+    // Criar partícula
+    particles.push({
+      x: b.x,
+      y: b.y,
+      radius: Math.random() * 3 + 1,
+      alpha: 1,
+      color: "magenta"
+    });
+
+    // Colisão com inimigos
     enemies.forEach(enemy => {
       const dx = b.x - enemy.x;
       const dy = b.y - enemy.y;
@@ -137,6 +148,60 @@ function updateBullets() {
       }
     });
   });
+
+  // Desenhar balas
+  ctx.fillStyle = "yellow";
+  bullets.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function updateParticles() {
+  particles.forEach((p, i) => {
+    p.alpha -= 0.02;
+    if (p.alpha <= 0) {
+      particles.splice(i, 1);
+      return;
+    }
+
+    ctx.beginPath();
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameRunning) {
+    movePlayer();
+    moveEnemies();
+    drawPlayer();
+    drawEnemies();
+    updateBullets();
+    updateParticles(); // <-- aqui!
+
+    enemies = enemies.filter(e => e.health > 0);
+
+    if (enemies.length === 0) {
+      nextWave();
+    }
+
+    if (player.health <= 0) {
+      alert("Game Over! Refresh to restart.");
+      gameRunning = false;
+    }
+  }
+
+  drawHUD();
+  requestAnimationFrame(update);
+}
+
 
   // Desenhar as balas com rastro
   bullets.forEach(b => {
