@@ -34,6 +34,7 @@ let player = {
   damage: 10
 };
 
+let fragmentationEnabled = false;
 let bulletSpeed = 6;
 let enemies = [];
 let bullets = [];
@@ -46,8 +47,9 @@ const upgrades = [
   { name: "+10 Damage", apply: () => player.damage += 10 },
   { name: "+20% Speed", apply: () => player.speed *= 1.2 },
   { name: "+30 HP", apply: () => player.health += 30 },
-  { name: "+30% Bullet Speed", apply: () => bulletSpeed *= 1.3 }
+  { name: "Fragmentation", apply: () => fragmentationEnabled = true }
 ];
+
 
 const strongerUpgrades = [
   { name: "+25 Damage", apply: () => player.damage += 25 },
@@ -123,6 +125,21 @@ function moveEnemies() {
   });
 }
 
+function spawnFragments(x, y) {
+  for (let i = 0; i < 2; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    bullets.push({
+      x: x,
+      y: y,
+      radius: 4,
+      speed: 3,
+      dx: Math.cos(angle),
+      dy: Math.sin(angle),
+      damage: 5
+    });
+  }
+}
+
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
@@ -181,8 +198,16 @@ function update() {
     drawEnemies();
     updateBullets();
     updateParticles();
+    
+for (let i = enemies.length - 1; i >= 0; i--) {
+  if (enemies[i].health <= 0) {
+    if (fragmentationEnabled) {
+      spawnFragments(enemies[i].x, enemies[i].y);
+    }
+    enemies.splice(i, 1);
+  }
+}
 
-    enemies = enemies.filter(e => e.health > 0);
 
     if (enemies.length === 0) {
       nextWave();
