@@ -171,37 +171,7 @@ function updateBullets() {
 
 
 
-function updateParticles() {
-  particles.forEach((p, i) => {
-    p.alpha -= 0.02;
-    if (p.alpha <= 0) {
-      particles.splice(i, 1);
-      return;
-    }
 
-    ctx.beginPath();
-    ctx.globalAlpha = p.alpha;
-    ctx.fillStyle = p.color;
-    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-}
-
-
-
-
-  // Desenhar as balas com rastro
-  bullets.forEach(b => {
-    let grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius);
-    grad.addColorStop(0, "yellow");
-    grad.addColorStop(1, "rgba(255, 255, 0, 0)");
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius * 2, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
 
 function shootAtNearestEnemy() {
   if (enemies.length === 0) return;
