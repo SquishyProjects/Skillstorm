@@ -22,7 +22,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 
-
+let bulletSpeed = 6;
 
 let player = {
   x: canvas.width / 2,
@@ -36,7 +36,6 @@ let player = {
 };
 
 let fragmentationLevel = 0;
-let bulletSpeed = 6;
 let enemies = [];
 let bullets = [];
 let particles = [];
