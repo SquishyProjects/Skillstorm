@@ -34,7 +34,7 @@ let player = {
   damage: 10
 };
 
-let fragmentationEnabled = false;
+let fragmentationLevel = 0;
 let bulletSpeed = 6;
 let enemies = [];
 let bullets = [];
@@ -47,7 +47,14 @@ const upgrades = [
   { name: "+10 Damage", apply: () => player.damage += 10 },
   { name: "+20% Speed", apply: () => player.speed *= 1.2 },
   { name: "+30 HP", apply: () => player.health += 30 },
-  { name: "Fragmentation", apply: () => fragmentationEnabled = true }
+ { 
+  name: "Fragmentation", 
+  apply: () => {
+    fragmentationLevel += 1;
+    console.log("Fragmentation nível:", fragmentationLevel);
+  }
+}
+
 ];
 
 
@@ -126,19 +133,21 @@ function moveEnemies() {
 }
 
 function spawnFragments(x, y) {
-  for (let i = 0; i < 2; i++) {
+  const total = fragmentationLevel * 2;
+  for (let i = 0; i < total; i++) {
     const angle = Math.random() * Math.PI * 2;
     bullets.push({
       x: x,
       y: y,
       radius: 4,
-      speed: 3,
+      speed: 4,
       dx: Math.cos(angle),
       dy: Math.sin(angle),
       damage: 5
     });
   }
 }
+
 
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
