@@ -247,8 +247,18 @@ function update() {
     drawPlayer();
     drawEnemies();
     updateBullets();
+    
+for (let i = enemies.length - 1; i >= 0; i--) {
+  if (enemies[i].health <= 0) {
+    const ex = enemies[i].x;
+    const ey = enemies[i].y;
+    enemies.splice(i, 1);
 
-    enemies = enemies.filter(e => e.health > 0);
+    if (fragmentationEnabled) {
+      spawnFragments(ex, ey);
+    }
+  }
+}
 
     if (enemies.length === 0) {
       nextWave();
