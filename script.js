@@ -32,6 +32,7 @@ let player = {
   speed: 3,
   health: 100,
   damage: 10
+  bulletSpeed: 6 // velocidade base
 };
 
 let fragmentationLevel = 0;
@@ -47,15 +48,14 @@ const upgrades = [
   { name: "+10 Damage", apply: () => player.damage += 10 },
   { name: "+20% Speed", apply: () => player.speed *= 1.2 },
   { name: "+30 HP", apply: () => player.health += 30 },
- { 
-  name: "Fragmentation", 
-  apply: () => {
-    fragmentationLevel += 1;
-    console.log("Fragmentation nível:", fragmentationLevel);
-  }
-}
-
+  { name: "+20% Bullet Speed", apply: () => {
+      bullets.forEach(b => b.speed *= 1.2); // errado, pois isso só afeta balas existentes
+      player.bulletSpeed *= 1.2; // use isso!
+    } 
+  },
+  { name: "Fragmentation", apply: () => fragmentationLevel += 1 }
 ];
+
 
 
 const strongerUpgrades = [
