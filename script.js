@@ -124,13 +124,11 @@ function moveEnemies() {
 }
 
 function updateBullets() {
-  // Atualizar posição e detectar colisão
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
-    // Criar rastro de partículas
     particles.push({
       x: b.x,
       y: b.y,
@@ -139,7 +137,6 @@ function updateBullets() {
       color: "magenta"
     });
 
-    // Colisão com inimigos
     for (let j = 0; j < enemies.length; j++) {
       const enemy = enemies[j];
       const dx = b.x - enemy.x;
@@ -148,10 +145,23 @@ function updateBullets() {
       if (dist < enemy.size) {
         enemy.health -= b.damage;
         bullets.splice(i, 1);
-        break; // parar de verificar após colisão
+        break;
       }
     }
   }
+
+  // Desenhar projéteis com rastro colorido
+  bullets.forEach(b => {
+    let grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius);
+    grad.addColorStop(0, "yellow");
+    grad.addColorStop(1, "rgba(255, 255, 0, 0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius * 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
 
   // Desenhar projéteis com gradiente
   bullets.forEach(b => {
@@ -192,7 +202,7 @@ function update() {
     drawPlayer();
     drawEnemies();
     updateBullets();
-    updateParticles(); // <-- aqui!
+    updateParticles();
 
     enemies = enemies.filter(e => e.health > 0);
 
@@ -209,6 +219,7 @@ function update() {
   drawHUD();
   requestAnimationFrame(update);
 }
+
 
 
   // Desenhar as balas com rastro
