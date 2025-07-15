@@ -129,6 +129,7 @@ function updateBullets() {
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
+    // Criar partícula de rastro
     particles.push({
       x: b.x,
       y: b.y,
@@ -137,6 +138,7 @@ function updateBullets() {
       color: "magenta"
     });
 
+    // Colisão com inimigos
     for (let j = 0; j < enemies.length; j++) {
       const enemy = enemies[j];
       const dx = b.x - enemy.x;
@@ -150,19 +152,6 @@ function updateBullets() {
     }
   }
 
-  // Desenhar projéteis com rastro colorido
-  bullets.forEach(b => {
-    let grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius);
-    grad.addColorStop(0, "yellow");
-    grad.addColorStop(1, "rgba(255, 255, 0, 0)");
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius * 2, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
-
-
   // Desenhar projéteis com gradiente
   bullets.forEach(b => {
     let grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius);
@@ -173,7 +162,8 @@ function updateBullets() {
     ctx.arc(b.x, b.y, b.radius * 2, 0, Math.PI * 2);
     ctx.fill();
   });
-}
+} // ← Essa chave fecha corretamente a função updateBullets()
+
 
 
 function updateParticles() {
