@@ -21,6 +21,9 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let boss = null;
+let bossProjectiles = [];
+
 
 let bulletSpeed = 6;
 
@@ -31,7 +34,7 @@ let player = {
   color: "white",
   speed: 3,
   health: 100,
-  damage: 10,
+  damage: 10
   bulletSpeed: 6 // velocidade base
 };
 
@@ -65,26 +68,40 @@ const strongerUpgrades = [
 
 function spawnEnemies(num) {
   for (let i = 0; i < num; i++) {
-    const isStrong = Math.random() < 0.2; // 20% chance de ser forte
-    if (isStrong) {
-      enemies.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 25,
-        speed: 0.8,
-        color: "purple",
-        health: 100 + wave * 10
-      });
-    } else {
-      enemies.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 15,
-        speed: 1 + Math.random(),
-        color: "red",
-        health: 20 + wave * 5
-      });
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+
+    let type = "normal";
+    let color = "red";
+    let size = 15;
+    let speed = 1 + Math.random();
+    let health = 20 + wave * 5;
+
+    if (wave >= 10 && wave < 15) {
+      if (Math.random() < 0.3) {
+        type = "triangle";
+        color = "#00ffaa"; // ciano esverdeado
+        size = 22;
+        speed = 0.9;
+        health = 100 + wave * 10;
+      } else if (Math.random() < 0.5) {
+        color = "purple";
+      }
     }
+
+    if (wave >= 16) {
+      if (Math.random() < 0.25) {
+        type = "triangle";
+        color = "#00ffaa";
+        size = 22;
+        speed = 0.9;
+        health = 120 + wave * 10;
+      } else if (Math.random() < 0.5) {
+        color = "purple";
+      }
+    }
+
+    enemies.push({ x, y, size, speed, color, health, type });
   }
 }
 
@@ -99,9 +116,47 @@ function drawEnemies() {
   enemies.forEach(enemy => {
     ctx.fillStyle = enemy.color;
     ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+
+    if (enemy.type === "triangle") {
+      const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+      const side = enemy.size * 2;
+      for (let i = 0; i < 3; i++) {
+        const theta = angle + i * (2 * Math.PI / 3);
+        const x = enemy.x + Math.cos(theta) * side / 2;
+        const y = enemy.y + Math.sin(theta) * side / 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    } else {
+      ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+    }
+
     ctx.fill();
   });
+}
+
+function drawBoss() {
+  if (!boss) return;
+
+  // Boss shape (triângulo)
+  ctx.fillStyle = boss.color;
+  ctx.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const angle = i * (2 * Math.PI / 3) - Math.PI / 2;
+    const x = boss.x + Math.cos(angle) * boss.size;
+    const y = boss.y + Math.sin(angle) * boss.size;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Barra de HP
+  ctx.fillStyle = "red";
+  ctx.fillRect(boss.x - 50, boss.y - boss.size - 20, 100, 10);
+  ctx.fillStyle = "lime";
+  ctx.fillRect(boss.x - 50, boss.y - boss.size - 20, 100 * (boss.health / boss.maxHealth), 10);
 }
 
 function movePlayer() {
@@ -160,6 +215,16 @@ function updateBullets() {
       const dx = b.x - enemy.x;
       const dy = b.y - enemy.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
+      if (boss) {
+  const dx = b.x - boss.x;
+  const dy = b.y - boss.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < boss.size) {
+    boss.health -= b.damage;
+    bullets.splice(index, 1);
+  }
+}
+
       if (dist < enemy.size) {
         enemy.health -= b.damage;
         bullets.splice(i, 1);
@@ -211,9 +276,17 @@ function shootAtNearestEnemy() {
 
 function nextWave() {
   wave++;
-  spawnEnemies(5 + wave * 2);
+
+  if (wave === 15) {
+    enemies = []; // remove inimigos normais
+    spawnBoss();
+  } else {
+    spawnEnemies(5 + wave * 2);
+  }
+
   showUpgrade();
 }
+
 
 function showUpgrade() {
   gameRunning = false;
@@ -247,29 +320,93 @@ function drawHUD() {
   ctx.fillText(`Wave: ${wave}`, 10, 40);
 }
 
+function spawnBoss() {
+  boss = {
+    x: canvas.width / 2,
+    y: 100,
+    size: 60,
+    speed: 0.5,
+    color: "#ccc",
+    health: 1000,
+    maxHealth: 1000
+  };
+}
+
 function update() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   if (gameRunning) {
     movePlayer();
     moveEnemies();
     drawPlayer();
     drawEnemies();
     updateBullets();
-    
-for (let i = enemies.length - 1; i >= 0; i--) {
-  if (enemies[i].health <= 0) {
-    const ex = enemies[i].x;
-    const ey = enemies[i].y;
-    enemies.splice(i, 1);
+    updateParticles?.(); // caso você tenha partículas
 
-   if (fragmentationLevel > 0) {
-  spawnFragments(ex, ey);
-}
+    // ⬇️ Atualiza e desenha projéteis do boss
+    bossProjectiles.forEach((p, i) => {
+      p.x += p.dx * p.speed;
+      p.y += p.dy * p.speed;
 
-  }
-}
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
 
-    if (enemies.length === 0) {
+      // Colisão com o jogador
+      const dx = p.x - player.x;
+      const dy = p.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < p.radius + player.size) {
+        player.health -= 5;
+        bossProjectiles.splice(i, 1);
+      }
+    });
+
+    // ⬇️ Lógica do boss
+    if (boss) {
+      const dx = player.x - boss.x;
+      const dy = player.y - boss.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      boss.x += (dx / dist) * boss.speed;
+      boss.y += (dy / dist) * boss.speed;
+
+      // Atira a cada 1000ms
+      if (performance.now() % 1000 < 16) {
+        const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+        bossProjectiles.push({
+          x: boss.x,
+          y: boss.y,
+          dx: Math.cos(angle),
+          dy: Math.sin(angle),
+          speed: 3,
+          radius: 6
+        });
+      }
+
+      drawBoss();
+
+      if (boss.health <= 0) {
+        boss = null;
+        spawnEnemies(5 + wave * 2); // volta os inimigos
+      }
+    }
+
+    // ⬇️ Verifica mortes de inimigos comuns
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      if (enemies[i].health <= 0) {
+        const ex = enemies[i].x;
+        const ey = enemies[i].y;
+        enemies.splice(i, 1);
+
+        if (fragmentationLevel > 0) {
+          spawnFragments(ex, ey);
+        }
+      }
+    }
+
+    // ⬇️ Avança wave se não há inimigos nem boss
+    if (enemies.length === 0 && !boss) {
       nextWave();
     }
 
