@@ -5,6 +5,13 @@ body {
   background-color: #000;
 }
 
+#start-screen,
+.card,
+#play-button,
+#upgrade-screen h2 {
+  font-family: 'Press Start 2P', monospace;
+}
+
 #start-screen {
   position: fixed;
   z-index: 10;
