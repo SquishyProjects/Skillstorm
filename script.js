@@ -13,6 +13,7 @@ let player = {
   damage: 10
 };
 
+let bulletSpeed = 6;
 let enemies = [];
 let bullets = [];
 let wave = 0;
@@ -23,24 +24,37 @@ const upgrades = [
   { name: "+10 Damage", apply: () => player.damage += 10 },
   { name: "+20% Speed", apply: () => player.speed *= 1.2 },
   { name: "+30 HP", apply: () => player.health += 30 },
+  { name: "+30% Bullet Speed", apply: () => bulletSpeed *= 1.3 }
 ];
 
 const strongerUpgrades = [
   { name: "+25 Damage", apply: () => player.damage += 25 },
   { name: "+50% Speed", apply: () => player.speed *= 1.5 },
-  { name: "+100 HP", apply: () => player.health += 100 },
+  { name: "+100 HP", apply: () => player.health += 100 }
 ];
 
 function spawnEnemies(num) {
   for (let i = 0; i < num; i++) {
-    enemies.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      size: 15,
-      speed: 1 + Math.random(),
-      color: "red",
-      health: 20 + wave * 5
-    });
+    const isStrong = Math.random() < 0.2; // 20% chance de ser forte
+    if (isStrong) {
+      enemies.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: 25,
+        speed: 0.8,
+        color: "purple",
+        health: 100 + wave * 10
+      });
+    } else {
+      enemies.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: 15,
+        speed: 1 + Math.random(),
+        color: "red",
+        health: 20 + wave * 5
+      });
+    }
   }
 }
 
@@ -65,6 +79,12 @@ function movePlayer() {
   if (keys["s"]) player.y += player.speed;
   if (keys["a"]) player.x -= player.speed;
   if (keys["d"]) player.x += player.speed;
+
+  // Limites da tela
+  if (player.x < player.size) player.x = player.size;
+  if (player.x > canvas.width - player.size) player.x = canvas.width - player.size;
+  if (player.y < player.size) player.y = player.size;
+  if (player.y > canvas.height - player.size) player.y = canvas.height - player.size;
 }
 
 function moveEnemies() {
@@ -86,7 +106,6 @@ function updateBullets() {
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
-    // Colisão com inimigos
     enemies.forEach(enemy => {
       const dx = b.x - enemy.x;
       const dy = b.y - enemy.y;
@@ -98,11 +117,14 @@ function updateBullets() {
     });
   });
 
-  // Desenhar as balas
-  ctx.fillStyle = "yellow";
+  // Desenhar as balas com rastro
   bullets.forEach(b => {
+    let grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.radius);
+    grad.addColorStop(0, "yellow");
+    grad.addColorStop(1, "rgba(255, 255, 0, 0)");
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.arc(b.x, b.y, b.radius * 2, 0, Math.PI * 2);
     ctx.fill();
   });
 }
@@ -128,7 +150,7 @@ function shootAtNearestEnemy() {
     x: player.x,
     y: player.y,
     radius: 5,
-    speed: 6,
+    speed: bulletSpeed,
     dx: Math.cos(angle),
     dy: Math.sin(angle),
     damage: player.damage
@@ -149,7 +171,7 @@ function showUpgrade() {
   let options = [];
   while (options.length < 3) {
     const pick = upgradeSet[Math.floor(Math.random() * upgradeSet.length)];
-    if (!options.includes(pick)) options.push(pick);
+    if (!options.some(o => o.name === pick.name)) options.push(pick);
   }
   options.forEach(upg => {
     const card = document.createElement("div");
@@ -158,6 +180,7 @@ function showUpgrade() {
     card.onclick = () => {
       upg.apply();
       screen.style.display = "none";
+      screen.innerHTML = "";
       gameRunning = true;
     };
     screen.appendChild(card);
