@@ -34,7 +34,7 @@ let player = {
   color: "white",
   speed: 3,
   health: 100,
-  damage: 10
+  damage: 10,
   bulletSpeed: 6 // velocidade base
 };
 
