@@ -247,12 +247,13 @@ function updateBullets() {
 
 
 function shootAtNearestEnemy() {
-  if (enemies.length === 0) return;
+  if (enemies.length === 0 && !boss) return;
 
-  let nearest = enemies[0];
+  let nearest = enemies[0] || boss;
   let minDist = Infinity;
 
-  enemies.forEach(e => {
+  [...enemies, boss].forEach(e => {
+    if (!e) return;
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -267,12 +268,13 @@ function shootAtNearestEnemy() {
     x: player.x,
     y: player.y,
     radius: 5,
-    speed: bulletSpeed,
+    speed: player.bulletSpeed || 6, // ← importante definir fallback!
     dx: Math.cos(angle),
     dy: Math.sin(angle),
     damage: player.damage
   });
 }
+
 
 function nextWave() {
   wave++;
@@ -379,7 +381,7 @@ function update() {
           y: boss.y,
           dx: Math.cos(angle),
           dy: Math.sin(angle),
-          speed: 3,
+          speed: 9,
           radius: 6
         });
       }
