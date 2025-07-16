@@ -5,6 +5,25 @@ body {
   font-family: 'Press Start 2P', monospace;
 }
 
+#card-icons {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  background-color: #333;
+  border: 2px solid #555;
+  background-size: cover;
+  background-position: center;
+}
+
 #cheat-panel {
   position: fixed;
   bottom: 10px;
