@@ -443,7 +443,7 @@ const cardImages = {
   fragmentation: "https://iili.io/FWhmuCQ.md.png", // Exemplo
   bulletSpeed: "https://iili.io/FXYBJte.png",
   damageBoost: "https://example.com/damageboost.png",
-  maxHP: "https://example.com/maxhp.png"
+  maxHP: "https://iili.io/FXY1l5P.png"
 };
 
 // === CARTAS COLETADAS ===
