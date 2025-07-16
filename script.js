@@ -414,7 +414,7 @@ const cardImages = {
   bulletSpeed: "https://iili.io/FXYBJte.png",
   damageBoost: "https://iili.io/FXYkG8g.png",
   maxHP: "https://iili.io/FXY1l5P.png",
-  playerSpeed: "https://iili.io/FXWOVLX.png""
+  playerSpeed: "https://iili.io/FXWOVLX.png"
 };
 
 const cardDescriptions = {
