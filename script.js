@@ -543,8 +543,7 @@ function update() {
 }
 
 
-// === CARTAS COLETADAS ===
-let collectedCards = [];
+
 
 // === FUNÇÃO PARA ATUALIZAR OS ÍCONES NA TELA ===
 function getCardKeyByName(name) {
