@@ -446,5 +446,9 @@ window.addEventListener("keydown", (e) => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
 
 window.onload = () => {
-  // Apenas espera o botão ser clicado
+  nextWave();
+  update();
+  setInterval(() => {
+    if (gameRunning) shootAtNearestEnemy();
+  }, 500);
 };
