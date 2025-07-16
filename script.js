@@ -441,7 +441,7 @@ function update() {
 // === CONFIGURAÇÃO DE IMAGENS POR LINK ===
 const cardImages = {
   fragmentation: "https://iili.io/FWhmuCQ.md.png", // Exemplo
-  bulletSpeed: "https://example.com/bulletspeed.png",
+  bulletSpeed: "https://iili.io/FXYBJte.png",
   damageBoost: "https://example.com/damageboost.png",
   maxHP: "https://example.com/maxhp.png"
 };
