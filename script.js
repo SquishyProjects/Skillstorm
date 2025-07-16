@@ -311,26 +311,45 @@ function showUpgrade() {
   gameRunning = false;
   const screen = document.getElementById("upgrade-screen");
   screen.innerHTML = `<h2>Wave ${wave} complete! Choose an upgrade:</h2>`;
+
   const upgradeSet = wave % 5 === 0 ? strongerUpgrades : upgrades;
   let options = [];
   while (options.length < 3) {
     const pick = upgradeSet[Math.floor(Math.random() * upgradeSet.length)];
-    if (!options.some(o => o.name === pick.name)) options.push(pick);
+    if (!options.includes(pick)) options.push(pick);
   }
+
   options.forEach(upg => {
     const card = document.createElement("div");
     card.className = "card";
     card.innerText = upg.name;
     card.onclick = () => {
       upg.apply();
+
+      // Verifica qual carta foi aplicada e adiciona ao painel se ainda não tiver
+      const cardName = getCardKeyByName(upg.name);
+      if (cardName && !collectedCards.includes(cardName)) {
+        collectedCards.push(cardName);
+        updateCardIcons();
+      }
+
       screen.style.display = "none";
-      screen.innerHTML = "";
       gameRunning = true;
     };
     screen.appendChild(card);
   });
+
   screen.style.display = "flex";
 }
+
+function getCardKeyByName(name) {
+  if (name.toLowerCase().includes("fragmentation")) return "fragmentation";
+  if (name.toLowerCase().includes("bullet")) return "bulletSpeed";
+  if (name.toLowerCase().includes("damage")) return "damageBoost";
+  if (name.toLowerCase().includes("hp")) return "maxHP";
+  return null;
+}
+
 
 function drawHUD() {
   ctx.fillStyle = "white";
@@ -450,6 +469,14 @@ const cardImages = {
 let collectedCards = [];
 
 // === FUNÇÃO PARA ATUALIZAR OS ÍCONES NA TELA ===
+function getCardKeyByName(name) {
+  if (name.includes("Fragmentation")) return "fragmentation";
+  if (name.includes("Bullet")) return "bulletSpeed";
+  if (name.includes("Damage")) return "damageBoost";
+  if (name.includes("HP")) return "maxHP";
+  return null;
+}
+
 function updateCardIcons() {
   const container = document.getElementById("card-icons");
   container.innerHTML = "";
