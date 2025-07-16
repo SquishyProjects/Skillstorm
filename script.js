@@ -422,6 +422,11 @@ function update() {
   requestAnimationFrame(update);
 }
 
+document.getElementById("cheat-button").onclick = () => {
+  const menu = document.getElementById("cheat-menu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+};
+
 window.addEventListener("keydown", (e) => keys[e.key.toLowerCase()] = true);
 window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
 
