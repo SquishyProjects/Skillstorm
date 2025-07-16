@@ -21,6 +21,8 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let collectedCards = []; // ex: ["fragmentation", "bulletSpeed", "damageBoost"]
+
 let boss = null;
 let bossProjectiles = [];
 
