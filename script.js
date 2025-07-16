@@ -35,7 +35,7 @@ let player = {
   speed: 3,
   health: 100,
   damage: 10,
-  bulletSpeed: 3 // velocidade base
+  bulletSpeed: 1 // velocidade base
 };
 
 let fragmentationLevel = 0;
