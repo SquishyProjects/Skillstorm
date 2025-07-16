@@ -440,9 +440,9 @@ function update() {
 }
 // === CONFIGURAÇÃO DE IMAGENS POR LINK ===
 const cardImages = {
-  fragmentation: "https://iili.io/FWhmuCQ.md.png", // Exemplo
+  fragmentation: "https://iili.io/FXY4ae9.png", // Exemplo
   bulletSpeed: "https://iili.io/FXYBJte.png",
-  damageBoost: "https://example.com/damageboost.png",
+  damageBoost: "https://iili.io/FXYkG8g.png",
   maxHP: "https://iili.io/FXY1l5P.png"
 };
 
