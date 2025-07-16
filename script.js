@@ -27,7 +27,7 @@ let boss = null;
 let bossProjectiles = [];
 
 
-let bulletSpeed = 1;
+let bulletSpeed = 6;
 
 let player = {
   x: canvas.width / 2,
@@ -37,7 +37,7 @@ let player = {
   speed: 3,
   health: 100,
   damage: 10,
-  bulletSpeed: 1 // velocidade base
+  bulletSpeed: 3 // velocidade base
 };
 
 let fragmentationLevel = 0;
