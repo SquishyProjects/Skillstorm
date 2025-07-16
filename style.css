@@ -5,6 +5,45 @@ body {
   font-family: 'Press Start 2P', monospace;
 }
 
+#cheat-panel {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 99;
+  font-family: sans-serif;
+}
+
+#cheat-button {
+  background: #222;
+  color: white;
+  border: 2px solid #555;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#cheat-menu {
+  display: none;
+  background: #111;
+  padding: 10px;
+  margin-top: 5px;
+  border: 2px solid #444;
+}
+
+#cheat-menu button {
+  display: block;
+  background: #333;
+  color: white;
+  border: none;
+  margin: 5px 0;
+  padding: 6px;
+  cursor: pointer;
+}
+
+#cheat-menu button:hover {
+  background: #555;
+}
+
 #start-screen {
   position: fixed;
   z-index: 999;
