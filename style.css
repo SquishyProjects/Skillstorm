@@ -16,6 +16,7 @@ body {
 }
 
 .card-icon {
+  position: relative;
   width: 40px;
   height: 40px;
   background-color: #333;
@@ -23,6 +24,30 @@ body {
   background-size: cover;
   background-position: center;
 }
+
+.card-count {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: black;
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.card-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+}
+
 
 #cheat-panel {
   position: fixed;
