@@ -326,10 +326,14 @@ function showUpgrade() {
     card.onclick = () => {
       upg.apply();
 
-      // Verifica qual carta foi aplicada e adiciona ao painel se ainda não tiver
       const cardName = getCardKeyByName(upg.name);
-      if (cardName && !collectedCards.includes(cardName)) {
-        collectedCards.push(cardName);
+      if (cardName) {
+        if (!collectedCards.includes(cardName)) {
+          collectedCards.push(cardName);
+          cardStacks[cardName] = 1;
+        } else {
+          cardStacks[cardName] = (cardStacks[cardName] || 1) + 1;
+        }
         updateCardIcons();
       }
 
@@ -341,6 +345,86 @@ function showUpgrade() {
 
   screen.style.display = "flex";
 }
+
+function getCardKeyByName(name) {
+  if (name.toLowerCase().includes("fragmentation")) return "fragmentation";
+  if (name.toLowerCase().includes("bullet")) return "bulletSpeed";
+  if (name.toLowerCase().includes("damage")) return "damageBoost";
+  if (name.toLowerCase().includes("hp")) return "maxHP";
+  if (name.toLowerCase().includes("speed")) return "playerSpeed";
+  return null;
+}
+
+function updateCardIcons() {
+  const container = document.getElementById("card-icons");
+  if (!container) return;
+  container.innerHTML = "";
+
+  collectedCards.forEach(card => {
+    const icon = document.createElement("div");
+    icon.className = "card-icon";
+
+    if (cardImages[card]) {
+      icon.style.backgroundImage = `url('${cardImages[card]}')`;
+    } else {
+      icon.style.backgroundColor = "#666";
+    }
+
+    const count = document.createElement("div");
+    count.className = "card-count";
+    count.innerText = cardStacks[card] || 1;
+    icon.appendChild(count);
+
+    icon.addEventListener("mouseenter", (e) => showTooltip(e, card));
+    icon.addEventListener("mousemove", (e) => moveTooltip(e));
+    icon.addEventListener("mouseleave", hideTooltip);
+
+    container.appendChild(icon);
+  });
+}
+
+function showTooltip(e, cardKey) {
+  const tooltip = document.createElement("div");
+  tooltip.id = "card-tooltip";
+  tooltip.className = "card-tooltip";
+  tooltip.innerHTML = `<strong>${cardKey}</strong><br>${cardDescriptions[cardKey] || "No description."}`;
+  document.body.appendChild(tooltip);
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const tooltip = document.getElementById("card-tooltip");
+  if (tooltip) {
+    tooltip.style.left = `${e.pageX + 10}px`;
+    tooltip.style.top = `${e.pageY + 10}px`;
+  }
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById("card-tooltip");
+  if (tooltip) tooltip.remove();
+}
+
+// Mapas auxiliares
+let collectedCards = [];
+let cardStacks = {};
+
+const cardImages = {
+  fragmentation: "https://iili.io/FXY4ae9.png",
+  bulletSpeed: "https://iili.io/FXYBJte.png",
+  damageBoost: "https://iili.io/FXYkG8g.png",
+  maxHP: "https://iili.io/FXY1l5P.png",
+  playerSpeed: "https://iili.io/FXYvJxf.png"
+};
+
+const cardDescriptions = {
+  fragmentation: "When enemies die, they release weaker projectiles.",
+  bulletSpeed: "Increases projectile speed.",
+  damageBoost: "Increases your projectile damage.",
+  maxHP: "Increases your current HP.",
+  playerSpeed: "Increases your movement speed."
+};
+
 
 function getCardKeyByName(name) {
   if (name.toLowerCase().includes("fragmentation")) return "fragmentation";
