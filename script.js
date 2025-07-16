@@ -209,31 +209,41 @@ function updateBullets() {
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
-    // Colisão com inimigos
-    for (let j = 0; j < enemies.length; j++) {
+    // Verifica colisão com inimigos normais
+    for (let j = enemies.length - 1; j >= 0; j--) {
       const enemy = enemies[j];
       const dx = b.x - enemy.x;
       const dy = b.y - enemy.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (boss) {
-  const dx = b.x - boss.x;
-  const dy = b.y - boss.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist < boss.size) {
-    boss.health -= b.damage;
-    bullets.splice(index, 1);
-  }
-}
-
       if (dist < enemy.size) {
         enemy.health -= b.damage;
         bullets.splice(i, 1);
         break;
       }
     }
+
+    // Verifica colisão com o boss
+    if (boss) {
+      const dx = b.x - boss.x;
+      const dy = b.y - boss.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < boss.size) {
+        boss.health -= b.damage;
+        bullets.splice(i, 1);
+        continue;
+      }
+    }
+
+    // Remover projétil se sair da tela
+    if (
+      b.x < 0 || b.x > canvas.width ||
+      b.y < 0 || b.y > canvas.height
+    ) {
+      bullets.splice(i, 1);
+    }
   }
 
-  // Desenhar projéteis simples (sem efeito)
+  // Desenhar projéteis do jogador
   ctx.fillStyle = "yellow";
   bullets.forEach(b => {
     ctx.beginPath();
@@ -246,10 +256,13 @@ function updateBullets() {
 
 
 
+
 function shootAtNearestEnemy() {
+  // Encerra se não há nenhum inimigo nem boss
   if (enemies.length === 0 && !boss) return;
 
-  let nearest = enemies[0] || boss;
+  // Prioriza inimigos comuns; se não tiver, atira no boss
+  let nearest = null;
   let minDist = Infinity;
 
   [...enemies, boss].forEach(e => {
@@ -263,12 +276,14 @@ function shootAtNearestEnemy() {
     }
   });
 
+  if (!nearest) return;
+
   const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
   bullets.push({
     x: player.x,
     y: player.y,
     radius: 5,
-    speed: player.bulletSpeed || 6, // ← importante definir fallback!
+    speed: player.bulletSpeed || 6,
     dx: Math.cos(angle),
     dy: Math.sin(angle),
     damage: player.damage
