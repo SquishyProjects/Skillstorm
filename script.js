@@ -21,7 +21,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let collectedCards = []; // ex: ["fragmentation", "bulletSpeed", "damageBoost"]
+
 
 let boss = null;
 let bossProjectiles = [];
@@ -438,7 +438,57 @@ function update() {
   drawHUD();
   requestAnimationFrame(update);
 }
+// === CONFIGURAÇÃO DE IMAGENS POR LINK ===
+const cardImages = {
+  fragmentation: "https://iili.io/FWhmuCQ.md.png", // Exemplo
+  bulletSpeed: "https://example.com/bulletspeed.png",
+  damageBoost: "https://example.com/damageboost.png",
+  maxHP: "https://example.com/maxhp.png"
+};
 
+// === CARTAS COLETADAS ===
+let collectedCards = [];
+
+// === FUNÇÃO PARA ATUALIZAR OS ÍCONES NA TELA ===
+function updateCardIcons() {
+  const container = document.getElementById("card-icons");
+  container.innerHTML = "";
+
+  collectedCards.forEach(card => {
+    const icon = document.createElement("div");
+    icon.className = "card-icon";
+
+    if (cardImages[card]) {
+      icon.style.backgroundImage = `url('${cardImages[card]}')`;
+    } else {
+      icon.style.backgroundColor = "#666"; // fallback
+    }
+
+    icon.title = card; // mostra nome ao passar o mouse
+    container.appendChild(icon);
+  });
+}
+
+// === EXEMPLO DE ADIÇÃO DE UMA CARTA (chame isso ao aplicar upgrade) ===
+function applyUpgrade(name) {
+  if (!collectedCards.includes(name)) {
+    collectedCards.push(name);
+    updateCardIcons();
+  }
+
+  // aplicar efeitos
+  if (name === "fragmentation") {
+    fragmentationLevel++;
+  } else if (name === "bulletSpeed") {
+    player.bulletSpeed += 1;
+  } else if (name === "damageBoost") {
+    player.damage += 10;
+  } else if (name === "maxHP") {
+    player.health += 50;
+  }
+}
+
+// Exemplo: applyUpgrade("fragmentation");
 document.getElementById("cheat-button").onclick = () => {
   const menu = document.getElementById("cheat-menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
