@@ -27,7 +27,7 @@ let boss = null;
 let bossProjectiles = [];
 
 
-let bulletSpeed = 6;
+let bulletSpeed = 1;
 
 let player = {
   x: canvas.width / 2,
