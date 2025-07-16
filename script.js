@@ -363,12 +363,7 @@ function updateCardIcons() {
   collectedCards.forEach(card => {
     const icon = document.createElement("div");
     icon.className = "card-icon";
-
-    if (cardImages[card]) {
-      icon.style.backgroundImage = `url('${cardImages[card]}')`;
-    } else {
-      icon.style.backgroundColor = "#666";
-    }
+    icon.style.backgroundImage = `url('${cardImages[card]}')`;
 
     const count = document.createElement("div");
     count.className = "card-count";
@@ -382,6 +377,7 @@ function updateCardIcons() {
     container.appendChild(icon);
   });
 }
+
 
 function showTooltip(e, cardKey) {
   const tooltip = document.createElement("div");
@@ -554,24 +550,7 @@ function getCardKeyByName(name) {
   return null;
 }
 
-function updateCardIcons() {
-  const container = document.getElementById("card-icons");
-  container.innerHTML = "";
 
-  collectedCards.forEach(card => {
-    const icon = document.createElement("div");
-    icon.className = "card-icon";
-
-    if (cardImages[card]) {
-      icon.style.backgroundImage = `url('${cardImages[card]}')`;
-    } else {
-      icon.style.backgroundColor = "#666"; // fallback
-    }
-
-    icon.title = card; // mostra nome ao passar o mouse
-    container.appendChild(icon);
-  });
-}
 
 // === EXEMPLO DE ADIÇÃO DE UMA CARTA (chame isso ao aplicar upgrade) ===
 function applyUpgrade(name) {
