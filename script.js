@@ -414,7 +414,7 @@ const cardImages = {
   bulletSpeed: "https://iili.io/FXYBJte.png",
   damageBoost: "https://iili.io/FXYkG8g.png",
   maxHP: "https://iili.io/FXY1l5P.png",
-  playerSpeed: "https://iili.io/FXYvJxf.png"
+  playerSpeed: "https://iili.io/FXWOVLX.png""
 };
 
 const cardDescriptions = {
@@ -541,13 +541,7 @@ function update() {
   drawHUD();
   requestAnimationFrame(update);
 }
-// === CONFIGURAÇÃO DE IMAGENS POR LINK ===
-const cardImages = {
-  fragmentation: "https://iili.io/FXY4ae9.png", // Exemplo
-  bulletSpeed: "https://iili.io/FXYBJte.png",
-  damageBoost: "https://iili.io/FXYkG8g.png",
-  maxHP: "https://iili.io/FXY1l5P.png"
-};
+
 
 // === CARTAS COLETADAS ===
 let collectedCards = [];
