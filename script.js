@@ -413,7 +413,8 @@ const cardImages = {
   bulletSpeed: "https://iili.io/FXYBJte.png",
   damageBoost: "https://iili.io/FXYkG8g.png",
   maxHP: "https://iili.io/FXY1l5P.png",
-  playerSpeed: "https://iili.io/FXWOVLX.png"
+  playerSpeed: "https://iili.io/FXWOVLX.png",
+  Lightning: "https://iili.io/FhJWdQ9.png" // substitua com o link real
 };
 
 const cardDescriptions = {
@@ -421,7 +422,8 @@ const cardDescriptions = {
   bulletSpeed: "Increases projectile speed.",
   damageBoost: "Increases your projectile damage.",
   maxHP: "Increases your current HP.",
-  playerSpeed: "Increases your movement speed."
+  playerSpeed: "Increases your movement speed.",
+  Lightning: "Calls 2 Bolts from the skies every few seconds. Instantly kills enemies on hit."
 };
 
 
@@ -562,15 +564,32 @@ function applyUpgrade(name) {
     updateCardIcons();
   }
 
-  // aplicar efeitos
-  if (name === "fragmentation") {
+  if (name === "Bullet Speed") {
+    bulletSpeed += 2;
+  } else if (name === "Fragmentation") {
     fragmentationLevel++;
-  } else if (name === "bulletSpeed") {
-    player.bulletSpeed += 1;
-  } else if (name === "damageBoost") {
-    player.damage += 10;
-  } else if (name === "maxHP") {
-    player.health += 50;
+  } else if (name === "Damage Boost") {
+    player.damage += 1;
+  } else if (name === "Max HP") {
+    player.maxHealth += 2;
+    player.health = player.maxHealth;
+  } else if (name === "Lightning") {
+    lightningLevel++;
+  }
+}
+
+
+function spawnLightning() {
+  if (lightningLevel === 0) return;
+
+  if (lightningCooldown <= 0) {
+    for (let i = 0; i < lightningLevel * 2; i++) {
+      let x = Math.random() * canvas.width;
+      lightnings.push({ x, y: 0, height: 0 });
+    }
+    lightningCooldown = 180; // ~3 segundos (60 = 1s)
+  } else {
+    lightningCooldown--;
   }
 }
 
