@@ -21,6 +21,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let souls = 0;
 let lightningLevel = 0;
 let lightningCooldown = 0;
 let lightnings = [];
@@ -56,12 +57,13 @@ const upgrades = [
   { name: "+20% Speed", apply: () => player.speed *= 1.2 },
   { name: "+30 HP", apply: () => player.health += 30 },
   { name: "+20% Bullet Speed", apply: () => {
-      bullets.forEach(b => b.speed *= 1.2); // errado, pois isso só afeta balas existentes
-      player.bulletSpeed *= 1.2; // use isso!
+      player.bulletSpeed *= 1.2;
     } 
   },
-  { name: "Fragmentation", apply: () => fragmentationLevel += 1 }
+  { name: "Fragmentation", apply: () => fragmentationLevel += 1 },
+  { name: "Lightning", apply: () => lightningStacks += 2 } // <- aqui!
 ];
+
 
 
 
@@ -178,6 +180,8 @@ function movePlayer() {
 }
 
 function moveEnemies() {
+
+
   enemies.forEach(enemy => {
     let dx = player.x - enemy.x;
     let dy = player.y - enemy.y;
@@ -188,6 +192,13 @@ function moveEnemies() {
     if (dist < player.size + enemy.size) {
       player.health -= 0.2;
     }
+    if (enemy.health <= 0) {
+  souls += 1;
+  enemies.splice(i, 1);
+}
+
+
+
   });
 }
 
@@ -315,7 +326,7 @@ function showUpgrade() {
   const screen = document.getElementById("upgrade-screen");
   screen.innerHTML = `<h2>Wave ${wave} complete! Choose an upgrade:</h2>`;
 
-  const upgradeSet = wave % 5 === 0 ? strongerUpgrades : upgrades;
+  Set = wave % 5 === 0 ? strongerUpgrades : upgrades;
   let options = [];
   while (options.length < 3) {
     const pick = upgradeSet[Math.floor(Math.random() * upgradeSet.length)];
@@ -347,6 +358,19 @@ function showUpgrade() {
   });
 
   screen.style.display = "flex";
+
+  const rerollBtn = document.createElement("button");
+rerollBtn.textContent = "Reroll (50 Souls)";
+rerollBtn.onclick = () => {
+  if (souls >= 50) {
+    souls -= 50;
+    showUpgrade(); // reexibe com novas cartas
+  } else {
+    alert("Not enough souls!");
+  }
+};
+screen.appendChild(rerollBtn);
+
 }
 
 function getCardKeyByName(name) {
@@ -427,13 +451,7 @@ const cardDescriptions = {
 };
 
 
-function getCardKeyByName(name) {
-  if (name.toLowerCase().includes("fragmentation")) return "fragmentation";
-  if (name.toLowerCase().includes("bullet")) return "bulletSpeed";
-  if (name.toLowerCase().includes("damage")) return "damageBoost";
-  if (name.toLowerCase().includes("hp")) return "maxHP";
-  return null;
-}
+
 
 
 function drawHUD() {
@@ -441,6 +459,7 @@ function drawHUD() {
   ctx.font = "16px sans-serif";
   ctx.fillText(`HP: ${Math.floor(player.health)}`, 10, 20);
   ctx.fillText(`Wave: ${wave}`, 10, 40);
+  ctx.fillText(`Souls: ${souls}`, canvas.width - 120, 20); // topo direito
 }
 
 function spawnBoss() {
@@ -546,13 +565,15 @@ function update() {
 
 
 
-// === FUNÇÃO PARA ATUALIZAR OS ÍCONES NA TELA ===
 function getCardKeyByName(name) {
-  if (name.includes("Fragmentation")) return "fragmentation";
-  if (name.includes("Bullet")) return "bulletSpeed";
-  if (name.includes("Damage")) return "damageBoost";
-  if (name.includes("HP")) return "maxHP";
-  return null;
+  switch(name) {
+    case "Bullet Speed": return "bulletspeed";
+    case "Fragmentation": return "fragmentation";
+    case "Damage Boost": return "damageboost";
+    case "Max HP": return "maxhp";
+    case "Lightning": return "lightning";
+    default: return null;
+  }
 }
 
 
