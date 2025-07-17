@@ -338,7 +338,7 @@ function showUpgrade() {
   const screen = document.getElementById("upgrade-screen");
   screen.innerHTML = `<h2>Wave ${wave} complete! Choose an upgrade:</h2>`;
 
-  Set = wave % 5 === 0 ? strongerUpgrades : upgrades;
+  const upgradeSet = wave % 5 === 0 ? strongerUpgrades : upgrades;
   let options = [];
   while (options.length < 3) {
     const pick = upgradeSet[Math.floor(Math.random() * upgradeSet.length)];
