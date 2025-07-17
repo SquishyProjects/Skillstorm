@@ -21,6 +21,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let floatingTexts = [];
 let souls = 0;
 let lightningLevel = 0;
 let lightningCooldown = 0;
@@ -194,7 +195,18 @@ function moveEnemies() {
     }
     if (enemy.health <= 0) {
   souls += 1;
+
+
   enemies.splice(i, 1);
+
+      floatingTexts.push({
+  x: enemy.x,
+  y: enemy.y,
+  text: "+1",
+  alpha: 1,
+  time: 0
+});
+
 }
 
 
@@ -460,6 +472,24 @@ function drawHUD() {
   ctx.fillText(`HP: ${Math.floor(player.health)}`, 10, 20);
   ctx.fillText(`Wave: ${wave}`, 10, 40);
   ctx.fillText(`Souls: ${souls}`, canvas.width - 120, 20); // topo direito
+  
+  floatingTexts.forEach(t => {
+  ctx.fillStyle = `rgba(0, 255, 255, ${t.alpha})`; // ciano com transparência
+  ctx.font = "16px Arial";
+  ctx.fillText(t.text, t.x, t.y);
+});
+
+}
+
+function updateFloatingTexts() {
+  floatingTexts.forEach(t => {
+    t.y -= 0.5;           // sobe o texto
+    t.time += 1 / 60;     // incrementa tempo
+    t.alpha = Math.max(0, 1 - t.time / 0.5); // fade out em 0.5s
+  });
+
+  // remove os que sumiram
+  floatingTexts = floatingTexts.filter(t => t.time < 0.5);
 }
 
 function spawnBoss() {
@@ -559,6 +589,8 @@ function update() {
   }
 
   drawHUD();
+  updateFloatingTexts();
+
   requestAnimationFrame(update);
 }
 
