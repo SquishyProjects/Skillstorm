@@ -21,6 +21,9 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let lightningLevel = 0;
+let lightningCooldown = 0;
+let lightnings = [];
 
 
 let boss = null;
