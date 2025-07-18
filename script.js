@@ -451,7 +451,8 @@ const cardImages = {
   damageBoost: "https://iili.io/FXYkG8g.png",
   maxHP: "https://iili.io/FXY1l5P.png",
   playerSpeed: "https://iili.io/FXWOVLX.png",
-  Lightning: "https://iili.io/FhJWdQ9.png" // substitua com o link real
+  lightning: "https://iili.io/FhJWdQ9.png"
+
 };
 
 const cardDescriptions = {
@@ -460,7 +461,8 @@ const cardDescriptions = {
   damageBoost: "Increases your projectile damage.",
   maxHP: "Increases your current HP.",
   playerSpeed: "Increases your movement speed.",
-  Lightning: "Calls 2 Bolts from the skies every few seconds. Instantly kills enemies on hit."
+  lightning: "Calls 2 Bolts from the skies every few seconds. Instantly kills enemies on hit."
+
 };
 
 
