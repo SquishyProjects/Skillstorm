@@ -48,6 +48,7 @@ let player = {
 let fragmentationLevel = 0;
 let enemies = [];
 let bullets = [];
+let lightningStacks = 0;
 let particles = [];
 let wave = 0;
 let keys = {};
