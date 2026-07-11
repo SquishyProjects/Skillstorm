@@ -1,156 +1,22 @@
 body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-  font-family: 'Press Start 2P', monospace;
+    margin: 0;
+    overflow: hidden;
+    background-color: #050510;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-#card-icons {
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  z-index: 5;
-}
-
-.card-icon {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  background-color: #333;
-  border: 2px solid #555;
-  background-size: cover;
-  background-position: center;
-}
-
-.card-count {
-  position: absolute;
-  bottom: -5px;
-  right: -5px;
-  background: black;
-  color: white;
-  font-size: 12px;
-  border-radius: 4px;
-  padding: 0 4px;
-}
-
-.card-tooltip {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 6px 10px;
-  font-size: 14px;
-  border-radius: 5px;
-  pointer-events: none;
-  z-index: 9999;
-  white-space: nowrap;
-}
-
-
-#cheat-panel {
-  position: fixed;
-  bottom: 10px;
-  left: 10px;
-  z-index: 99;
-  font-family: sans-serif;
-}
-
-#cheat-button {
-  background: #222;
-  color: white;
-  border: 2px solid #555;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-#cheat-menu {
-  display: none;
-  background: #111;
-  padding: 10px;
-  margin-top: 5px;
-  border: 2px solid #444;
-}
-
-#cheat-menu button {
-  display: block;
-  background: #333;
-  color: white;
-  border: none;
-  margin: 5px 0;
-  padding: 6px;
-  cursor: pointer;
-}
-
-#cheat-menu button:hover {
-  background: #555;
-}
-
-#start-screen {
-  position: fixed;
-  z-index: 999;
-  width: 100vw;
-  height: 100vh;
-  background: black;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 30px;
-}
-
-#logo {
-  width: 250px;
-  image-rendering: pixelated;
-}
-
-#play-button {
-  padding: 20px 40px;
-  font-size: 18px;
-  background-color: limegreen;
-  border: 4px solid #0f0;
-  color: black;
-  cursor: pointer;
-  font-family: 'Press Start 2P', monospace;
-  transition: transform 0.2s;
-}
-
-#play-button:hover {
-  transform: scale(1.1);
-}
-
-canvas {
-  display: block;
-  background: #111;
-}
-
-#upgrade-screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 2;
-  font-family: 'Press Start 2P', monospace;
-  text-align: center;
-}
-
-.card {
-  background: #222;
-  padding: 1em;
-  margin: 1em;
-  border: 2px solid #444;
-  cursor: pointer;
-}
-
-.card:hover {
-  border-color: gold;
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.3);
+    pointer-events: none; /* Garante que o clique passe pela UI e vá para o jogo */
+    z-index: 10;
 }
