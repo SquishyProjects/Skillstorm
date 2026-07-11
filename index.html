@@ -1,36 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skillstorm</title>
-  <link rel="icon" href="https://iili.io/FWhmuCQ.md.png" type="image/png" />
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash Hit Remake - Protótipo 1</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            font-family: sans-serif;
+            user-select: none;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+            pointer-events: none;
+        }
+    </style>
 </head>
-  <div id="cheat-panel">
-  <button id="cheat-button">⚙️ Cheats</button>
-  <div id="cheat-menu">
-    <button onclick="nextWave()">⏭️ Skip Wave</button>
-    <!-- Outros cheats opcionais -->
-    <button onclick="player.health = 999">❤️ Max HP</button>
-    <button onclick="player.damage += 50">💥 +50 Damage</button>
-  </div>
-</div>
-
 <body>
-  <!-- Tela inicial -->
-  <div id="start-screen">
-    <img id="logo" src="https://iili.io/FWhmuCQ.md.png" alt="Logo Skillstorm">
-    <button id="play-button">PLAY</button>
-  </div>
 
-  <!-- Jogo -->
-  <canvas id="game"></canvas>
-  <div id="upgrade-screen"></div>
+    <div id="ui">ESFERAS: <span id="ball-count">25</span></div>
 
-  <script src="script.js"></script>
-  <div id="card-icons"></div>
+    <!-- Importando Three.js via CDN Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
 
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Configuração Principal ---
+        const scene = new THREE.Scene();
+        // Nevoeiro para dar o clima do Smash Hit original e esconder o horizonte
+        scene.background = new THREE.Color(0x0a0a18);
+        scene.fog = new THREE.FogExp2(0x0a0a18, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // --- Iluminação ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0x00ffff, 2);
+        directionalLight.position.set(5, 10, 2);
+        scene.add(directionalLight);
+
+        // --- Variáveis de Jogo ---
+        let ballCount = 25;
+        const speed = 0.1; // Velocidade de movimento para frente
+        const spheres = []; // Guarda as esferas ativas
+
+        // Criando um túnel/corredor simples para referência visual de movimento
+        const tunnelGeometry = new THREE.BoxGeometry(20, 10, 500);
+        // Inverter as faces para vermos o lado de dentro do cubo
+        tunnelGeometry.scale(-1, 1, 1); 
+        const tunnelMaterial = new THREE.MeshStandardMaterial({
+            color: 0x111125,
+            wireframe: true // Estilo wireframe para parecer futurista
+        });
+        const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
+        tunnel.position.z = -200;
+        scene.add(tunnel);
+
+        // Posicionando a câmera no início do corredor
+        camera.position.set(0, 2, 0);
+
+        // --- Mecânica de Tiro (Raycasting) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('pointerdown', (event) => {
+            if (ballCount <= 0) return;
+
+            // Reduz munição
+            ballCount--;
+            document.getElementById('ball-count').innerText = ballCount;
+
+            // Converte a posição do clique para coordenadas normalizadas do WebGL (-1 a 1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Atualiza o raio com a posição do mouse e a câmera
+            raycaster.setFromCamera(mouse, camera);
+
+            // Cria a esfera física/visual
+            const ballGeo = new THREE.SphereGeometry(0.2, 32, 32);
+            const ballMat = new THREE.MeshStandardMaterial({ 
+                color: 0xaaaaaa, 
+                metalness: 0.9, 
+                roughness: 0.1 
+            });
+            const ball = new THREE.Mesh(ballGeo, ballMat);
+
+            // A bola nasce um pouco à frente da câmera
+            ball.position.copy(camera.position);
+            ball.position.z -= 0.5;
+
+            // Define a direção do disparo baseada no clique do mouse
+            const force = 0.5; // Velocidade do tiro
+            const direction = new THREE.Vector3();
+            raycaster.ray.direction.normalize();
+            direction.copy(raycaster.ray.direction).multiplyScalar(force);
+
+            // Guarda o objeto visual e seu vetor de velocidade (física manual simples por enquanto)
+            spheres.push({
+                mesh: ball,
+                velocity: direction,
+                gravity: -0.005 // Efeito de queda da bolinha
+            });
+
+            scene.add(ball);
+        });
+
+        // --- Game Loop (Atualização dos quadros) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Move a câmera para frente (eixo Z negativo)
+            camera.position.z -= speed;
+
+            // 2. Atualiza a física das esferas disparadas
+            for (let i = spheres.length - 1; i >= 0; i--) {
+                const s = spheres[i];
+                
+                // Aplica velocidade
+                s.mesh.position.add(s.velocity);
+                // Aplica gravidade no eixo Y
+                s.velocity.y += s.gravity;
+
+                // Otimização: Remove bolinhas que foram muito longe ou caíram demais
+                if (s.mesh.position.z < camera.position.z - 100 || s.mesh.position.y < -10) {
+                    scene.remove(s.mesh);
+                    s.mesh.geometry.dispose();
+                    s.mesh.material.dispose();
+                    spheres.splice(i, 1);
+                }
+            }
+
+            // Move o túnel junto para parecer infinito (ilusão de ótica simples)
+            if (camera.position.z < tunnel.position.z - 100) {
+                tunnel.position.z -= 200;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Ajusta a tela caso o usuário mude o tamanho do navegador
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Inicia o jogo
+        animate();
+    </script>
 </body>
 </html>
