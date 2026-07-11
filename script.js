@@ -1,667 +1,207 @@
-// Tela inicial
-// Controle da tela inicial
-const startScreen = document.getElementById("start-screen");
-const playButton = document.getElementById("play-button");
+import * as THREE from 'three';
 
-playButton.onclick = () => {
-  startScreen.style.display = "none";
-  startGame();
-};
+// --- Configuração do Cenário ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a18);
+scene.fog = new THREE.FogExp2(0x0a0a18, 0.015);
 
-function startGame() {
-  nextWave();
-  update();
-  setInterval(() => {
-    if (gameRunning) shootAtNearestEnemy();
-  }, 500);
-}
+// --- Câmera e Renderizador ---
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// --- Iluminação ---
+const ambientLight = new THREE.AmbientLight(0x404040, 1.2);
+scene.add(ambientLight);
 
-let floatingTexts = [];
-let souls = 0;
-let lightningLevel = 0;
-let lightningCooldown = 0;
-let lightnings = [];
+// Luz direcional simulando o brilho dos vidros/neon
+const directionalLight = new THREE.DirectionalLight(0x00ffff, 2);
+directionalLight.position.set(5, 10, 2);
+scene.add(directionalLight);
 
+// --- Variáveis de Controle do Jogo ---
+let ballCount = 25;
+const speed = 0.15; // Aumentei um pouquinho a velocidade para dar mais emoção
+const spheres = []; 
+const glasses = []; // Array que vai guardar os obstáculos de vidro ativos
 
-let boss = null;
-let bossProjectiles = [];
+// --- Criação do Túnel (Cenário de Teste) ---
+const tunnelGeometry = new THREE.BoxGeometry(20, 10, 500);
+tunnelGeometry.scale(-1, 1, 1); 
+const tunnelMaterial = new THREE.MeshStandardMaterial({
+    color: 0x111125,
+    wireframe: true
+});
+const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
+tunnel.position.z = -200;
+scene.add(tunnel);
 
+camera.position.set(0, 2, 0);
 
-let bulletSpeed = 6;
-
-let player = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-  size: 20,
-  color: "white",
-  speed: 3,
-  health: 100,
-  damage: 10,
-  bulletSpeed: 3 // velocidade base
-};
-
-let fragmentationLevel = 0;
-let enemies = [];
-let bullets = [];
-let lightningStacks = 0;
-let particles = [];
-let wave = 0;
-let keys = {};
-let gameRunning = true;
-
-const upgrades = [
-  { name: "+10 Damage", apply: () => player.damage += 10 },
-  { name: "+20% Speed", apply: () => player.speed *= 1.2 },
-  { name: "+30 HP", apply: () => player.health += 30 },
-  { name: "+20% Bullet Speed", apply: () => {
-      player.bulletSpeed *= 1.2;
-    } 
-  },
-  { name: "Fragmentation", apply: () => fragmentationLevel += 1 },
-  { name: "Lightning", apply: () => lightningStacks += 2 } // <- aqui!
-];
-
-
-
-
-const strongerUpgrades = [
-  { name: "+25 Damage", apply: () => player.damage += 25 },
-  { name: "+50% Speed", apply: () => player.speed *= 1.5 },
-  { name: "+100 HP", apply: () => player.health += 100 }
-];
-
-function spawnEnemies(num) {
-  for (let i = 0; i < num; i++) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-
-    let type = "normal";
-    let color = "red";
-    let size = 15;
-    let speed = 1 + Math.random();
-    let health = 20 + wave * 5;
-
-    if (wave >= 10 && wave < 15) {
-      if (Math.random() < 0.3) {
-        type = "triangle";
-        color = "#00ffaa"; // ciano esverdeado
-        size = 22;
-        speed = 0.9;
-        health = 100 + wave * 10;
-      } else if (Math.random() < 0.5) {
-        color = "purple";
-      }
-    }
-
-    if (wave >= 16) {
-      if (Math.random() < 0.25) {
-        type = "triangle";
-        color = "#00ffaa";
-        size = 22;
-        speed = 0.9;
-        health = 120 + wave * 10;
-      } else if (Math.random() < 0.5) {
-        color = "purple";
-      }
-    }
-
-    enemies.push({ x, y, size, speed, color, health, type });
-  }
-}
-
-function drawPlayer() {
-  ctx.fillStyle = player.color;
-  ctx.beginPath();
-  ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawEnemies() {
-  enemies.forEach(enemy => {
-    ctx.fillStyle = enemy.color;
-    ctx.beginPath();
-
-    if (enemy.type === "triangle") {
-      const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-      const side = enemy.size * 2;
-      for (let i = 0; i < 3; i++) {
-        const theta = angle + i * (2 * Math.PI / 3);
-        const x = enemy.x + Math.cos(theta) * side / 2;
-        const y = enemy.y + Math.sin(theta) * side / 2;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-    } else {
-      ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-    }
-
-    ctx.fill();
-  });
-}
-
-function drawBoss() {
-  if (!boss) return;
-
-  // Boss shape (triângulo)
-  ctx.fillStyle = boss.color;
-  ctx.beginPath();
-  for (let i = 0; i < 3; i++) {
-    const angle = i * (2 * Math.PI / 3) - Math.PI / 2;
-    const x = boss.x + Math.cos(angle) * boss.size;
-    const y = boss.y + Math.sin(angle) * boss.size;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  // Barra de HP
-  ctx.fillStyle = "red";
-  ctx.fillRect(boss.x - 50, boss.y - boss.size - 20, 100, 10);
-  ctx.fillStyle = "lime";
-  ctx.fillRect(boss.x - 50, boss.y - boss.size - 20, 100 * (boss.health / boss.maxHealth), 10);
-}
-
-function movePlayer() {
-  if (keys["w"]) player.y -= player.speed;
-  if (keys["s"]) player.y += player.speed;
-  if (keys["a"]) player.x -= player.speed;
-  if (keys["d"]) player.x += player.speed;
-
-  // Limites da tela
-  if (player.x < player.size) player.x = player.size;
-  if (player.x > canvas.width - player.size) player.x = canvas.width - player.size;
-  if (player.y < player.size) player.y = player.size;
-  if (player.y > canvas.height - player.size) player.y = canvas.height - player.size;
-}
-
-function moveEnemies() {
-
-
-  enemies.forEach(enemy => {
-    let dx = player.x - enemy.x;
-    let dy = player.y - enemy.y;
-    let dist = Math.sqrt(dx * dx + dy * dy);
-    enemy.x += (dx / dist) * enemy.speed;
-    enemy.y += (dy / dist) * enemy.speed;
-
-    if (dist < player.size + enemy.size) {
-      player.health -= 0.2;
-    }
-    if (enemy.health <= 0) {
-  souls += 1;
-
-
-  enemies.splice(i, 1);
-
-      floatingTexts.push({
-  x: enemy.x,
-  y: enemy.y,
-  text: "+1",
-  alpha: 1,
-  time: 0
+// --- Função para Criar Obstáculos de Vidro ---
+// Material do vidro: semi-transparente, azulado e bem brilhante
+const glassMaterial = new THREE.MeshStandardMaterial({
+    color: 0x00aaff,
+    transparent: true,
+    opacity: 0.6,
+    roughness: 0.1,
+    metalness: 0.1,
+    side: THREE.DoubleSide
 });
 
-}
+function spawnGlass(zPos) {
+    // Dimensões aleatórias para os painéis de vidro
+    const width = Math.random() * 4 + 2;  // largura entre 2 e 6
+    const height = Math.random() * 5 + 3; // altura entre 3 e 8
+    const depth = 0.2;                    // espessura fina como vidro
 
+    const glassGeo = new THREE.BoxGeometry(width, height, depth);
+    const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
 
+    // Posiciona em X (esquerda/direita aleatória) e Y (altura do chão)
+    const xPos = (Math.random() - 0.5) * 8; // variação entre -4 e 4
+    const yPos = height / 2;                // apoiado no chão do túnel
 
-  });
-}
-
-function spawnFragments(x, y) {
-  const total = fragmentationLevel * 2;
-  for (let i = 0; i < total; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    bullets.push({
-      x: x,
-      y: y,
-      radius: 4,
-      speed: 4,
-      dx: Math.cos(angle),
-      dy: Math.sin(angle),
-      damage: 5
-    });
-  }
-}
-
-
-function updateBullets() {
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    const b = bullets[i];
-    b.x += b.dx * b.speed;
-    b.y += b.dy * b.speed;
-
-    // Verifica colisão com inimigos normais
-    for (let j = enemies.length - 1; j >= 0; j--) {
-      const enemy = enemies[j];
-      const dx = b.x - enemy.x;
-      const dy = b.y - enemy.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < enemy.size) {
-        enemy.health -= b.damage;
-        bullets.splice(i, 1);
-        break;
-      }
-    }
-
-    // Verifica colisão com o boss
-    if (boss) {
-      const dx = b.x - boss.x;
-      const dy = b.y - boss.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < boss.size) {
-        boss.health -= b.damage;
-        bullets.splice(i, 1);
-        continue;
-      }
-    }
-
-    // Remover projétil se sair da tela
-    if (
-      b.x < 0 || b.x > canvas.width ||
-      b.y < 0 || b.y > canvas.height
-    ) {
-      bullets.splice(i, 1);
-    }
-  }
-
-  // Desenhar projéteis do jogador
-  ctx.fillStyle = "yellow";
-  bullets.forEach(b => {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
-
-
-
-
-
-
-function shootAtNearestEnemy() {
-  // Encerra se não há nenhum inimigo nem boss
-  if (enemies.length === 0 && !boss) return;
-
-  // Prioriza inimigos comuns; se não tiver, atira no boss
-  let nearest = null;
-  let minDist = Infinity;
-
-  [...enemies, boss].forEach(e => {
-    if (!e) return;
-    const dx = player.x - e.x;
-    const dy = player.y - e.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < minDist) {
-      minDist = dist;
-      nearest = e;
-    }
-  });
-
-  if (!nearest) return;
-
-  const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    radius: 5,
-    speed: player.bulletSpeed || 6,
-    dx: Math.cos(angle),
-    dy: Math.sin(angle),
-    damage: player.damage
-  });
-}
-
-
-function nextWave() {
-  wave++;
-
-  if (wave === 15) {
-    enemies = []; // remove inimigos normais
-    spawnBoss();
-  } else {
-    spawnEnemies(5 + wave * 2);
-  }
-
-  showUpgrade();
-}
-
-
-function showUpgrade() {
-  gameRunning = false;
-  const screen = document.getElementById("upgrade-screen");
-  screen.innerHTML = `<h2>Wave ${wave} complete! Choose an upgrade:</h2>`;
-
-  const upgradeSet = wave % 5 === 0 ? strongerUpgrades : upgrades;
-  let options = [];
-  while (options.length < 3) {
-    const pick = upgradeSet[Math.floor(Math.random() * upgradeSet.length)];
-    if (!options.includes(pick)) options.push(pick);
-  }
-
-  options.forEach(upg => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerText = upg.name;
-    card.onclick = () => {
-      upg.apply();
-
-      const cardName = getCardKeyByName(upg.name);
-      if (cardName) {
-        if (!collectedCards.includes(cardName)) {
-          collectedCards.push(cardName);
-          cardStacks[cardName] = 1;
-        } else {
-          cardStacks[cardName] = (cardStacks[cardName] || 1) + 1;
-        }
-        updateCardIcons();
-      }
-
-      screen.style.display = "none";
-      gameRunning = true;
-    };
-    screen.appendChild(card);
-  });
-
-  screen.style.display = "flex";
-
-  const rerollBtn = document.createElement("button");
-rerollBtn.textContent = "Reroll (50 Souls)";
-rerollBtn.onclick = () => {
-  if (souls >= 50) {
-    souls -= 50;
-    showUpgrade(); // reexibe com novas cartas
-  } else {
-    alert("Not enough souls!");
-  }
-};
-screen.appendChild(rerollBtn);
-
-}
-
-function getCardKeyByName(name) {
-  if (name.toLowerCase().includes("fragmentation")) return "fragmentation";
-  if (name.toLowerCase().includes("bullet")) return "bulletSpeed";
-  if (name.toLowerCase().includes("damage")) return "damageBoost";
-  if (name.toLowerCase().includes("hp")) return "maxHP";
-  if (name.toLowerCase().includes("speed")) return "playerSpeed";
-  return null;
-}
-
-function updateCardIcons() {
-  const container = document.getElementById("card-icons");
-  if (!container) return;
-  container.innerHTML = "";
-
-  collectedCards.forEach(card => {
-    const icon = document.createElement("div");
-    icon.className = "card-icon";
-    icon.style.backgroundImage = `url('${cardImages[card]}')`;
-
-    const count = document.createElement("div");
-    count.className = "card-count";
-    count.innerText = cardStacks[card] || 1;
-    icon.appendChild(count);
-
-    icon.addEventListener("mouseenter", (e) => showTooltip(e, card));
-    icon.addEventListener("mousemove", (e) => moveTooltip(e));
-    icon.addEventListener("mouseleave", hideTooltip);
-
-    container.appendChild(icon);
-  });
-}
-
-
-function showTooltip(e, cardKey) {
-  const tooltip = document.createElement("div");
-  tooltip.id = "card-tooltip";
-  tooltip.className = "card-tooltip";
-  tooltip.innerHTML = `<strong>${cardKey}</strong><br>${cardDescriptions[cardKey] || "No description."}`;
-  document.body.appendChild(tooltip);
-  moveTooltip(e);
-}
-
-function moveTooltip(e) {
-  const tooltip = document.getElementById("card-tooltip");
-  if (tooltip) {
-    tooltip.style.left = `${e.pageX + 10}px`;
-    tooltip.style.top = `${e.pageY + 10}px`;
-  }
-}
-
-function hideTooltip() {
-  const tooltip = document.getElementById("card-tooltip");
-  if (tooltip) tooltip.remove();
-}
-
-// Mapas auxiliares
-let collectedCards = [];
-let cardStacks = {};
-
-const cardImages = {
-  fragmentation: "https://iili.io/FXY4ae9.png",
-  bulletSpeed: "https://iili.io/FXYBJte.png",
-  damageBoost: "https://iili.io/FXYkG8g.png",
-  maxHP: "https://iili.io/FXY1l5P.png",
-  playerSpeed: "https://iili.io/FXWOVLX.png",
-  lightning: "https://iili.io/FhJWdQ9.png"
-
-};
-
-const cardDescriptions = {
-  fragmentation: "When enemies die, they release weaker projectiles.",
-  bulletSpeed: "Increases projectile speed.",
-  damageBoost: "Increases your projectile damage.",
-  maxHP: "Increases your current HP.",
-  playerSpeed: "Increases your movement speed.",
-  lightning: "Calls 2 Bolts from the skies every few seconds. Instantly kills enemies on hit."
-
-};
-
-
-
-
-
-function drawHUD() {
-  ctx.fillStyle = "white";
-  ctx.font = "16px sans-serif";
-  ctx.fillText(`HP: ${Math.floor(player.health)}`, 10, 20);
-  ctx.fillText(`Wave: ${wave}`, 10, 40);
-  ctx.fillText(`Souls: ${souls}`, canvas.width - 120, 20); // topo direito
-  
-  floatingTexts.forEach(t => {
-  ctx.fillStyle = `rgba(0, 255, 255, ${t.alpha})`; // ciano com transparência
-  ctx.font = "16px Arial";
-  ctx.fillText(t.text, t.x, t.y);
-});
-
-}
-
-function updateFloatingTexts() {
-  floatingTexts.forEach(t => {
-    t.y -= 0.5;           // sobe o texto
-    t.time += 1 / 60;     // incrementa tempo
-    t.alpha = Math.max(0, 1 - t.time / 0.5); // fade out em 0.5s
-  });
-
-  // remove os que sumiram
-  floatingTexts = floatingTexts.filter(t => t.time < 0.5);
-}
-
-function spawnBoss() {
-  boss = {
-    x: canvas.width / 2,
-    y: 100,
-    size: 60,
-    speed: 0.5,
-    color: "#ccc",
-    health: 1000,
-    maxHealth: 1000
-  };
-}
-
-function update() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (gameRunning) {
-    movePlayer();
-    moveEnemies();
-    drawPlayer();
-    drawEnemies();
-    updateBullets();
+    glassMesh.position.set(xPos, yPos, zPos);
     
+    scene.add(glassMesh);
 
-    // ⬇️ Atualiza e desenha projéteis do boss
-    bossProjectiles.forEach((p, i) => {
-      p.x += p.dx * p.speed;
-      p.y += p.dy * p.speed;
+    // Criamos uma caixa de colisão invisível para este vidro
+    const boundingBox = new THREE.Box3().setFromObject(glassMesh);
 
-      ctx.fillStyle = "white";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
+    glasses.push({
+        mesh: glassMesh,
+        box: boundingBox
+    });
+}
 
-      // Colisão com o jogador
-      const dx = p.x - player.x;
-      const dy = p.y - player.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < p.radius + player.size) {
-        player.health -= 5;
-        bossProjectiles.splice(i, 1);
-      }
+// Inicializa os primeiros vidros no caminho do jogador
+for (let i = 1; i <= 5; i++) {
+    spawnGlass(-50 * i); // Spawna vidros a cada 50 unidades de distância
+}
+
+// --- Sistema de Tiro (Raycasting) ---
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+window.addEventListener('pointerdown', (event) => {
+    if (ballCount <= 0) return;
+
+    ballCount--;
+    document.getElementById('ball-count').innerText = ballCount;
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const ballGeo = new THREE.SphereGeometry(0.2, 16, 16); // Reduzi os segmentos para melhorar performance
+    const ballMat = new THREE.MeshStandardMaterial({ 
+        color: 0xaaaaaa, 
+        metalness: 0.9, 
+        roughness: 0.1 
+    });
+    const ball = new THREE.Mesh(ballGeo, ballMat);
+
+    ball.position.copy(camera.position);
+    ball.position.z -= 0.5;
+
+    const force = 0.6;
+    const direction = new THREE.Vector3();
+    raycaster.ray.direction.normalize();
+    direction.copy(raycaster.ray.direction).multiplyScalar(force);
+
+    spheres.push({
+        mesh: ball,
+        velocity: direction,
+        gravity: -0.004,
+        box: new THREE.Box3() // Cada bola ganha sua própria caixa de colisão
     });
 
-    // ⬇️ Lógica do boss
-    if (boss) {
-      const dx = player.x - boss.x;
-      const dy = player.y - boss.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      boss.x += (dx / dist) * boss.speed;
-      boss.y += (dy / dist) * boss.speed;
+    scene.add(ball);
+});
 
-      // Atira a cada 1000ms
-      if (performance.now() % 1000 < 16) {
-        const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-        bossProjectiles.push({
-          x: boss.x,
-          y: boss.y,
-          dx: Math.cos(angle),
-          dy: Math.sin(angle),
-          speed: 9,
-          radius: 6
-        });
-      }
+// --- Janela Redimensionável ---
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-      drawBoss();
+// --- Loop Principal de Animação ---
+function animate() {
+    requestAnimationFrame(animate);
 
-      if (boss.health <= 0) {
-        boss = null;
-        spawnEnemies(5 + wave * 2); // volta os inimigos
-      }
-    }
+    // 1. Avança a câmera pelo corredor
+    camera.position.z -= speed;
 
-    // ⬇️ Verifica mortes de inimigos comuns
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      if (enemies[i].health <= 0) {
-        const ex = enemies[i].x;
-        const ey = enemies[i].y;
-        enemies.splice(i, 1);
+    // 2. Atualiza a trajetória e colisão das esferas
+    for (let i = spheres.length - 1; i >= 0; i--) {
+        const s = spheres[i];
+        
+        s.mesh.position.add(s.velocity);
+        s.velocity.y += s.gravity; 
 
-        if (fragmentationLevel > 0) {
-          spawnFragments(ex, ey);
+        // Atualiza a caixa de colisão matemática da bola na nova posição
+        s.box.setFromObject(s.mesh);
+
+        // Checar colisão da bola com cada vidro existente
+        for (let j = glasses.length - 1; j >= 0; j--) {
+            const g = glasses[j];
+
+            if (s.box.intersectsBox(g.box)) {
+                // HOUVE COLISÃO! 💥
+                
+                // Remove o vidro da cena
+                scene.remove(g.mesh);
+                g.mesh.geometry.dispose();
+                glasses.splice(j, 1);
+
+                // Remove a bola que bateu
+                scene.remove(s.mesh);
+                s.mesh.geometry.dispose();
+                s.mesh.material.dispose();
+                spheres.splice(i, 1);
+
+                // Spawna um novo vidro lá na frente para o jogo continuar infinito
+                // Pega a posição do último vidro gerado e joga 50 unidades para frente
+                const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
+                spawnGlass(lastZ - 50);
+
+                break; // Sai do loop de vidros já que esta bola sumiu
+            }
         }
-      }
+
+        // Limpeza de memória: remove esferas antigas que sumiram no mapa
+        if (spheres[i] && (s.mesh.position.z < camera.position.z - 100 || s.mesh.position.y < -10)) {
+            scene.remove(s.mesh);
+            s.mesh.geometry.dispose();
+            s.mesh.material.dispose();
+            spheres.splice(i, 1);
+        }
     }
 
-    // ⬇️ Avança wave se não há inimigos nem boss
-    if (enemies.length === 0 && !boss) {
-      nextWave();
+    // 3. Remover vidros que o jogador já passou sem quebrar (Otimização)
+    for (let j = glasses.length - 1; j >= 0; j--) {
+        if (glasses[j].mesh.position.z > camera.position.z + 5) {
+            scene.remove(glasses[j].mesh);
+            glasses[j].mesh.geometry.dispose();
+            glasses.splice(j, 1);
+
+            // Spawna um novo vidro na frente para manter o fluxo
+            const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
+            spawnGlass(lastZ - 50);
+        }
     }
 
-    if (player.health <= 0) {
-      alert("Game Over! Refresh to restart.");
-      gameRunning = false;
+    // Move o túnel para frente para simular um caminho infinito
+    if (camera.position.z < tunnel.position.z - 100) {
+        tunnel.position.z -= 200;
     }
-  }
 
-  drawHUD();
-  updateFloatingTexts();
-
-  requestAnimationFrame(update);
+    renderer.render(scene, camera);
 }
 
-
-
-
-function getCardKeyByName(name) {
-  switch(name) {
-    case "Bullet Speed": return "bulletspeed";
-    case "Fragmentation": return "fragmentation";
-    case "Damage Boost": return "damageboost";
-    case "Max HP": return "maxhp";
-    case "Lightning": return "lightning";
-    default: return null;
-  }
-}
-
-
-
-// === EXEMPLO DE ADIÇÃO DE UMA CARTA (chame isso ao aplicar upgrade) ===
-function applyUpgrade(name) {
-  if (!collectedCards.includes(name)) {
-    collectedCards.push(name);
-    updateCardIcons();
-  }
-
-  if (name === "Bullet Speed") {
-    bulletSpeed += 2;
-  } else if (name === "Fragmentation") {
-    fragmentationLevel++;
-  } else if (name === "Damage Boost") {
-    player.damage += 1;
-  } else if (name === "Max HP") {
-    player.maxHealth += 2;
-    player.health = player.maxHealth;
-  } else if (name === "Lightning") {
-    lightningLevel++;
-  }
-}
-
-
-function spawnLightning() {
-  if (lightningLevel === 0) return;
-
-  if (lightningCooldown <= 0) {
-    for (let i = 0; i < lightningLevel * 2; i++) {
-      let x = Math.random() * canvas.width;
-      lightnings.push({ x, y: 0, height: 0 });
-    }
-    lightningCooldown = 180; // ~3 segundos (60 = 1s)
-  } else {
-    lightningCooldown--;
-  }
-}
-
-// Exemplo: applyUpgrade("fragmentation");
-document.getElementById("cheat-button").onclick = () => {
-  const menu = document.getElementById("cheat-menu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-};
-
-window.addEventListener("keydown", (e) => keys[e.key.toLowerCase()] = true);
-window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
-
-window.onload = () => {
-  nextWave();
-  update();
-  setInterval(() => {
-    if (gameRunning) shootAtNearestEnemy();
-  }, 500);
-};
+animate();
