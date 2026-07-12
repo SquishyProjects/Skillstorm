@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash Hit Teste Direto</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050510; font-family: sans-serif; user-select: none; }
+        #ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #ffffff; font-size: 28px; font-weight: bold; text-shadow: 0 0 10px #00ffff; z-index: 10; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">ESFERAS: <span id="ball-count">25</span></div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a18);
+        scene.fog = new THREE.FogExp2(0x0a0a18, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0x00ffff, 2);
+        directionalLight.position.set(0, 10, -10);
+        scene.add(directionalLight);
+
+        let ballCount = 25;
+        const speed = 0.12; 
+        const spheres = []; 
+        const glasses = []; 
+
+        const tunnelGeo = new THREE.BoxGeometry(20, 10, 500);
+        tunnelGeo.scale(-1, 1, 1); 
+        const tunnelMat = new THREE.MeshStandardMaterial({ color: 0x222244, wireframe: true });
+        const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
+        tunnel.position.z = -200;
+        scene.add(tunnel);
+
+        camera.position.set(0, 2, 0);
+
+        const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x00ccff, transparent: true, opacity: 0.8, roughness: 0.1, metalness: 0.3, side: THREE.DoubleSide });
+
+        function spawnGlass(zPos) {
+            const glassGeo = new THREE.BoxGeometry(4, 5, 0.3);
+            const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
+            glassMesh.position.set((Math.random() - 0.5) * 4, 2.5, zPos);
+            scene.add(glassMesh);
+            glasses.push({ mesh: glassMesh, box: new THREE.Box3().setFromObject(glassMesh) });
+        }
+
+        for (let i = 0; i < 6; i++) { spawnGlass(-20 - (i * 25)); }
+
+        window.addEventListener('pointerdown', (event) => {
+            if (ballCount <= 0) return;
+            ballCount--;
+            document.getElementById('ball-count').innerText = ballCount;
+
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 }));
+            ball.position.copy(camera.position).z -= 0.5;
+
+            const direction = new THREE.Vector3();
+            raycaster.ray.direction.normalize();
+            direction.copy(raycaster.ray.direction).multiplyScalar(0.6);
+
+            spheres.push({ mesh: ball, velocity: direction, gravity: -0.004, box: new THREE.Box3() });
+            scene.add(ball);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            camera.position.z -= speed;
+
+            for (let i = spheres.length - 1; i >= 0; i--) {
+                const s = spheres[i];
+                s.mesh.position.add(s.velocity);
+                s.velocity.y += s.gravity; 
+                s.box.setFromObject(s.mesh);
+
+                for (let j = glasses.length - 1; j >= 0; j--) {
+                    if (s.box.intersectsBox(glasses[j].box)) {
+                        scene.remove(glasses[j].mesh);
+                        glasses.splice(j, 1);
+                        scene.remove(s.mesh);
+                        spheres.splice(i, 1);
+                        const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
+                        spawnGlass(lastZ - 30);
+                        break; 
+                    }
+                }
+            }
+
+            for (let j = glasses.length - 1; j >= 0; j--) {
+                if (glasses[j].mesh.position.z > camera.position.z) {
+                    scene.remove(glasses[j].mesh);
+                    glasses.splice(j, 1);
+                    const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
+                    spawnGlass(lastZ - 30);
+                }
+            }
+
+            if (camera.position.z < tunnel.position.z - 100) tunnel.position.z -= 200;
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
