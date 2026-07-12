@@ -40,137 +40,165 @@
     </script>
 
     <script type="module">
-        import * as THREE from 'three';
+    import * as THREE from 'three';
 
-        // --- Configuração Principal ---
-        const scene = new THREE.Scene();
-        // Nevoeiro para dar o clima do Smash Hit original e esconder o horizonte
-        scene.background = new THREE.Color(0x0a0a18);
-        scene.fog = new THREE.FogExp2(0x0a0a18, 0.015);
+console.log("=== INICIANDO DEBUG DO SMASH HIT ===");
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+// --- Configuração do Cenário ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a18);
+scene.fog = new THREE.FogExp2(0x0a0a18, 0.015);
+console.log("1. Cena e Fog criados com sucesso.");
 
-        // --- Iluminação ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
-        scene.add(ambientLight);
+// --- Câmera e Renderizador ---
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+console.log("2. Renderizador acoplado ao DOM.");
 
-        const directionalLight = new THREE.DirectionalLight(0x00ffff, 2);
-        directionalLight.position.set(5, 10, 2);
-        scene.add(directionalLight);
+// --- Iluminação ---
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); 
+scene.add(ambientLight);
 
-        // --- Variáveis de Jogo ---
-        let ballCount = 25;
-        const speed = 0.1; // Velocidade de movimento para frente
-        const spheres = []; // Guarda as esferas ativas
+// --- Variáveis de Controle ---
+let ballCount = 25;
+const speed = 0.05; // Velocidade reduzida para debug para você conseguir ler os dados com calma
+const spheres = []; 
+const glasses = []; 
 
-        // Criando um túnel/corredor simples para referência visual de movimento
-        const tunnelGeometry = new THREE.BoxGeometry(20, 10, 500);
-        // Inverter as faces para vermos o lado de dentro do cubo
-        tunnelGeometry.scale(-1, 1, 1); 
-        const tunnelMaterial = new THREE.MeshStandardMaterial({
-            color: 0x111125,
-            wireframe: true // Estilo wireframe para parecer futurista
-        });
-        const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
-        tunnel.position.z = -200;
-        scene.add(tunnel);
+// --- Túnel ---
+const tunnelGeometry = new THREE.BoxGeometry(20, 10, 1000);
+tunnelGeometry.scale(-1, 1, 1); 
+const tunnelMaterial = new THREE.MeshStandardMaterial({ color: 0x444466, wireframe: true });
+const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
+tunnel.position.set(0, 5, -500);
+scene.add(tunnel);
+console.log("3. Túnel instanciado na posição:", tunnel.position);
 
-        // Posicionando a câmera no início do corredor
-        camera.position.set(0, 2, 0);
+camera.position.set(0, 2, 0);
 
-        // --- Mecânica de Tiro (Raycasting) ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+// --- Material do Vidro (Vermelho Sólido) ---
+const glassMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
 
-        window.addEventListener('pointerdown', (event) => {
-            if (ballCount <= 0) return;
+function spawnGlass(zPos, id) {
+    console.log(`[SPAWN] Tentando criar vidro #${id} em Z: ${zPos}`);
+    
+    const width = 4;  
+    const height = 4; 
+    const depth = 0.5;                    
 
-            // Reduz munição
-            ballCount--;
-            document.getElementById('ball-count').innerText = ballCount;
+    const glassGeo = new THREE.BoxGeometry(width, height, depth);
+    const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
 
-            // Converte a posição do clique para coordenadas normalizadas do WebGL (-1 a 1)
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // Posiciona fixo no meio do túnel
+    glassMesh.position.set(0, 3, zPos);
+    scene.add(glassMesh);
 
-            // Atualiza o raio com a posição do mouse e a câmera
-            raycaster.setFromCamera(mouse, camera);
+    // DEBUG VISUAL: Adiciona uma caixa de arame amarela brilhante ao redor do vidro
+    const helper = new THREE.BoxHelper(glassMesh, 0xffff00);
+    scene.add(helper);
 
-            // Cria a esfera física/visual
-            const ballGeo = new THREE.SphereGeometry(0.2, 32, 32);
-            const ballMat = new THREE.MeshStandardMaterial({ 
-                color: 0xaaaaaa, 
-                metalness: 0.9, 
-                roughness: 0.1 
-            });
-            const ball = new THREE.Mesh(ballGeo, ballMat);
+    const boundingBox = new THREE.Box3();
+    boundingBox.setFromCenterAndSize(
+        new THREE.Vector3(0, 3, zPos),
+        new THREE.Vector3(width, height, depth)
+    );
 
-            // A bola nasce um pouco à frente da câmera
-            ball.position.copy(camera.position);
-            ball.position.z -= 0.5;
+    glasses.push({
+        id: id,
+        mesh: glassMesh,
+        helper: helper,
+        box: boundingBox
+    });
+    
+    console.log(`[SPAWN] Vidro #${id} adicionado à lista. Posição real na cena:`, glassMesh.position);
+}
 
-            // Define a direção do disparo baseada no clique do mouse
-            const force = 0.5; // Velocidade do tiro
-            const direction = new THREE.Vector3();
-            raycaster.ray.direction.normalize();
-            direction.copy(raycaster.ray.direction).multiplyScalar(force);
+// Criando 3 barreiras de teste com IDs para rastreamento
+spawnGlass(-10, 1);
+spawnGlass(-25, 2);
+spawnGlass(-40, 3);
 
-            // Guarda o objeto visual e seu vetor de velocidade (física manual simples por enquanto)
-            spheres.push({
-                mesh: ball,
-                velocity: direction,
-                gravity: -0.005 // Efeito de queda da bolinha
-            });
+console.log("4. Lista inicial de vidros gerada. Tamanho do array:", glasses.length);
 
-            scene.add(ball);
-        });
+// --- Sistema de Tiro ---
+window.addEventListener('pointerdown', (event) => {
+    if (ballCount <= 0) return;
+    ballCount--;
+    document.getElementById('ball-count').innerText = ballCount;
 
-        // --- Game Loop (Atualização dos quadros) ---
-        function animate() {
-            requestAnimationFrame(animate);
+    const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+    );
 
-            // 1. Move a câmera para frente (eixo Z negativo)
-            camera.position.z -= speed;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
 
-            // 2. Atualiza a física das esferas disparadas
-            for (let i = spheres.length - 1; i >= 0; i--) {
-                const s = spheres[i];
-                
-                // Aplica velocidade
-                s.mesh.position.add(s.velocity);
-                // Aplica gravidade no eixo Y
-                s.velocity.y += s.gravity;
+    const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 16, 16), 
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    ball.position.copy(camera.position).z -= 0.5;
 
-                // Otimização: Remove bolinhas que foram muito longe ou caíram demais
-                if (s.mesh.position.z < camera.position.z - 100 || s.mesh.position.y < -10) {
-                    scene.remove(s.mesh);
-                    s.mesh.geometry.dispose();
-                    s.mesh.material.dispose();
-                    spheres.splice(i, 1);
-                }
+    const direction = new THREE.Vector3();
+    raycaster.ray.direction.normalize().multiplyScalar(0.4);
+    direction.copy(raycaster.ray.direction);
+
+    spheres.push({ mesh: ball, velocity: direction, box: new THREE.Box3() });
+    scene.add(ball);
+});
+
+// --- Janela Redimensionável ---
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- Loop Principal ---
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Avança a câmera lentamente para o Z negativo
+    camera.position.z -= speed;
+
+    // Atualiza o painel de debug na tela
+    const debugDiv = document.getElementById('debug');
+    if (debugDiv) {
+        debugDiv.innerHTML = `
+            <b>=== DEBUG INFO ===</b><br>
+            Cam Z: ${camera.position.z.toFixed(2)}<br>
+            Vidros ativos: ${glasses.length}<br>
+            ${glasses.map(g => `• V${g.id} Z: ${g.mesh.position.z}`).join('<br>')}
+        `;
+    }
+
+    // Atualiza as esferas e checa colisões
+    for (let i = spheres.length - 1; i >= 0; i--) {
+        const s = spheres[i];
+        s.mesh.position.add(s.velocity);
+        s.box.setFromObject(s.mesh);
+
+        for (let j = glasses.length - 1; j >= 0; j--) {
+            if (s.box.intersectsBox(glasses[j].box)) {
+                console.log(`[COLISÃO] Bola atingiu o Vidro #${glasses[j].id}`);
+                scene.remove(glasses[j].mesh);
+                scene.remove(glasses[j].helper); // Remove o aramado de debug
+                glasses.splice(j, 1);
+
+                scene.remove(s.mesh);
+                spheres.splice(i, 1);
+                break; 
             }
-
-            // Move o túnel junto para parecer infinito (ilusão de ótica simples)
-            if (camera.position.z < tunnel.position.z - 100) {
-                tunnel.position.z -= 200;
-            }
-
-            renderer.render(scene, camera);
         }
+    }
 
-        // Ajusta a tela caso o usuário mude o tamanho do navegador
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    renderer.render(scene, camera);
+}
 
-        // Inicia o jogo
-        animate();
+animate();
     </script>
 </body>
 </html>
