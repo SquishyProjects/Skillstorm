@@ -1,54 +1,80 @@
 import * as THREE from 'three';
 
-// --- Configuração do Cenário (Estética Smash Hit) ---
+// --- Configuração do Cenário (Estética Smash Hit Atualizada) ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a18);
-scene.fog = new THREE.FogExp2(0x0a0a18, 0.018); // Nevoeiro denso para o visual clean
+
+// Cor de fundo mais viva (Azul Índigo Profundo) em vez de preto absoluto
+scene.background = new THREE.Color(0x0e0e26); 
+
+// Neblina volumétrica colorida (Roxa/Magenta) que esconde o fim do cenário de forma elegante
+scene.fog = new THREE.FogExp2(0x1a0b2e, 0.025); 
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// --- Iluminação Neon ---
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+// --- Iluminação Turbinada (Tirando o jogo do Void) ---
+// Luz geral bem mais forte para clarear tudo
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.8); 
 scene.add(ambientLight);
 
-const lightLeft = new THREE.DirectionalLight(0x00ffff, 1.5); // Brilho azul/ciano
-lightLeft.position.set(-5, 5, -10);
-scene.add(lightLeft);
+// Luz direcional simulando um "sol neon" vindo de cima/frente
+const sunLight = new THREE.DirectionalLight(0x00ffff, 2.0); // Luz Ciano
+sunLight.position.set(0, 15, -20);
+scene.add(sunLight);
 
-const lightRight = new THREE.DirectionalLight(0xff00ff, 0.5); // Brilho sutil magenta para contraste
-lightRight.position.set(5, 5, -10);
-scene.add(lightRight);
+// Luz de preenchimento vinda de trás para destacar as bordas
+const backLight = new THREE.DirectionalLight(0xff00ff, 1.2); // Luz Magenta
+backLight.position.set(0, -5, -10);
+scene.add(backLight);
 
 // --- Variáveis de Controle ---
 let ballCount = 25;
 const speed = 0.12; 
 const spheres = []; 
 const glasses = []; 
-const shards = []; // Array para guardar os pedacinhos de vidro quebrando
+const shards = []; 
 
-// --- Túnel ---
-const tunnelGeometry = new THREE.BoxGeometry(20, 10, 500);
-tunnelGeometry.scale(-1, 1, 1); 
-const tunnelMaterial = new THREE.MeshStandardMaterial({
-    color: 0x151530,
-    wireframe: true
+// --- Criação do Chão e Teto Sólidos (Preenchendo o Vazio) ---
+const floorGroup = new THREE.Group();
+
+// Chão Sólido
+const floorGeo = new THREE.PlaneGeometry(30, 1000);
+const floorMat = new THREE.MeshStandardMaterial({ 
+    color: 0x121232, 
+    roughness: 0.2, 
+    metalness: 0.5 
 });
-const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
-tunnel.position.set(0, 5, -200);
-scene.add(tunnel);
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI / 2; // Deita o plano para virar chão
+floor.position.y = 0;
+floorGroup.add(floor);
 
-camera.position.set(0, 2, 0);
+// Teto Sólido
+const ceiling = new THREE.Mesh(floorGeo, floorMat);
+ceiling.rotation.x = Math.PI / 2; // Deita o plano para virar teto
+ceiling.position.y = 10;
+floorGroup.add(ceiling);
 
-// --- Material de Vidro Realista (Semi-transparente e reflexivo) ---
+// Grid Visual para dar noção de movimento (Linhas brilhantes no chão)
+const gridHelperFloor = new THREE.GridHelper(1000, 100, 0x00ffff, 0x442266);
+gridHelperFloor.position.y = 0.01; // Um milímetro acima do chão para não dar bug visual
+gridHelperFloor.rotation.x = 0;
+floorGroup.add(gridHelperFloor);
+
+floorGroup.position.z = -500;
+scene.add(floorGroup);
+
+camera.position.set(0, 3, 0); // Câmera um pouco mais alta para ver melhor o chão
+
+// --- Material de Vidro Realista (Translúcido e Brilhante) ---
 const glassMaterial = new THREE.MeshStandardMaterial({
-    color: 0x00e5ff,       // Ciano brilhante estilo Smash Hit
+    color: 0x00e5ff,       
     transparent: true,
-    opacity: 0.5,          // Translúcido
-    roughness: 0.05,       // Muito polido, gera reflexos bonitos
-    metalness: 0.1,
+    opacity: 0.6,          
+    roughness: 0.01,       // Extremamente polido para refletir as novas luzes
+    metalness: 0.2,
     side: THREE.DoubleSide
 });
 
@@ -56,19 +82,17 @@ const glassMaterial = new THREE.MeshStandardMaterial({
 function spawnGlass(zPos) {
     const width = 4;  
     const height = 5; 
-    const depth = 0.2; // Vidro bem fininho                    
+    const depth = 0.2;                     
 
     const glassGeo = new THREE.BoxGeometry(width, height, depth);
     const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
 
-    // Posiciona em X de forma semi-aleatória para interceptar o jogador
-    const xPos = (Math.random() - 0.5) * 3; 
-    const yPos = height / 2; // Apoiado no chão
+    const xPos = (Math.random() - 0.5) * 6; // Espalha um pouco mais para as laterais
+    const yPos = height / 2; 
 
     glassMesh.position.set(xPos, yPos, zPos);
     scene.add(glassMesh);
 
-    // Cria a caixa de colisão precisa
     const boundingBox = new THREE.Box3();
     boundingBox.setFromCenterAndSize(
         new THREE.Vector3(xPos, yPos, zPos),
@@ -83,58 +107,52 @@ function spawnGlass(zPos) {
     });
 }
 
-// Inicializa a pista com vidros na frente
+// Inicializa a pista com vidros
 for (let i = 0; i < 6; i++) {
     spawnGlass(-30 - (i * 40)); 
 }
 
-// --- Função para Efeito de Vidro Quebrando (Estilhaços) ---
+// --- Efeito de Vidro Quebrando (Estilhaços) ---
 function shatterGlass(x, y, z, width, height) {
-    // Vamos criar uma grade de 4x4 pedacinhos de vidro por painel
     const cols = 4;
     const rows = 4;
     const shardW = width / cols;
     const shardH = height / rows;
     const shardGeo = new THREE.BoxGeometry(shardW, shardH, 0.15);
 
-    // O centro do painel original serve como base
     const startX = x - width / 2 + shardW / 2;
     const startY = y - height / 2 + shardH / 2;
 
     for (let c = 0; c < cols; c++) {
         for (let r = 0; r < rows; r++) {
             const shardMesh = new THREE.Mesh(shardGeo, glassMaterial);
-            
-            // Posiciona o estilhaço na grade correspondente do painel original
             const pX = startX + c * shardW;
             const pY = startY + r * shardH;
             shardMesh.position.set(pX, pY, z);
             
-            // Rotação aleatória inicial para parecer dinâmico
             shardMesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
             scene.add(shardMesh);
 
-            // Adiciona forças físicas individuais para cada pedaço voar
             shards.push({
                 mesh: shardMesh,
                 velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.15,          // Voa um pouco pros lados
-                    (Math.random() * 0.1) + 0.05,          // Dá um leve pulinho para cima no impacto
-                    -speed - (Math.random() * 0.1)         // É empurrado para frente pelo impacto da bola
+                    (Math.random() - 0.5) * 0.2,          
+                    (Math.random() * 0.15) + 0.05,          
+                    -speed - (Math.random() * 0.1)         
                 ),
                 rotationSpeed: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1
+                    (Math.random() - 0.5) * 0.2,
+                    (Math.random() - 0.5) * 0.2,
+                    (Math.random() - 0.5) * 0.2
                 ),
-                gravity: -0.005, // Gravidade puxando o caco para o chão
-                life: 1.0        // Tempo de vida do estilhaço (fade-out)
+                gravity: -0.008, // Gravidade atuando nos cacos
+                life: 1.0        
             });
         }
     }
 }
 
-// --- Sistema de Disparo com Gravidade ---
+// --- Sistema de Disparo ---
 window.addEventListener('pointerdown', (event) => {
     if (ballCount <= 0) return;
     ballCount--;
@@ -148,88 +166,77 @@ window.addEventListener('pointerdown', (event) => {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    // Bolinha de metal cromada
-    const ballMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), ballMat);
+    // Esfera Cromada Refletiva
+    const ballMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffffff, 
+        metalness: 0.95, 
+        roughness: 0.05 
+    });
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), ballMat);
     ball.position.copy(camera.position).z -= 0.5;
 
-    // Força e direção calculadas em 3D
-    const force = 0.7; // Velocidade do tiro
+    const force = 0.8; 
     const direction = new THREE.Vector3();
     raycaster.ray.direction.normalize();
     direction.copy(raycaster.ray.direction).multiplyScalar(force);
 
-    // Salvando a bolinha com propriedade física de gravidade (Eixo Y caindo)
     spheres.push({ 
         mesh: ball, 
         velocity: direction, 
-        gravity: -0.005, // Força que puxa a bola para baixo a cada frame!
+        gravity: -0.006, 
         box: new THREE.Box3() 
     });
     
     scene.add(ball);
 });
 
-// --- Janela Redimensionável ---
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- Loop Principal de Animação ---
+// --- Loop Principal ---
 function animate() {
     requestAnimationFrame(animate);
 
-    // Avança a câmera continuamente (Z negativo)
+    // Movimento para frente
     camera.position.z -= speed;
 
-    // Atualiza o painel de texto simples de Debug com dados novos
+    // Atualiza o painel de texto simples de Debug
     const debugDiv = document.getElementById('debug');
     if (debugDiv) {
-        debugDiv.innerHTML = `Cam Z: ${camera.position.z.toFixed(1)} | Vidros: ${glasses.length} | Cacos: ${shards.length}`;
+        debugDiv.innerHTML = `Progresso Z: ${Math.abs(camera.position.z).toFixed(0)}m | Vidros: ${glasses.length}`;
     }
 
-    // 1. Atualiza as Esferas de Metal (Trajetória Parabólica em 3D)
+    // 1. Atualiza Esferas
     for (let i = spheres.length - 1; i >= 0; i--) {
         const s = spheres[i];
-        
-        // Aplica velocidade nos 3 eixos (X, Y, Z)
         s.mesh.position.add(s.velocity);
-        // Aplica o efeito físico de queda na velocidade vertical (Y)
         s.velocity.y += s.gravity; 
-        
         s.box.setFromObject(s.mesh);
 
-        // Checa colisão com os Vidros
+        // Colisões
         for (let j = glasses.length - 1; j >= 0; j--) {
             const g = glasses[j];
-
             if (s.box.intersectsBox(g.box)) {
-                // INSTANTE DO IMPACTO 💥
-                // Aciona o efeito de quebra passando a posição e dimensões do vidro atingido
                 shatterGlass(g.mesh.position.x, g.mesh.position.y, g.mesh.position.z, g.width, g.height);
-
-                // Deleta o vidro da cena
                 scene.remove(g.mesh);
                 g.mesh.geometry.dispose();
                 glasses.splice(j, 1);
 
-                // Deleta a bolinha que bateu
                 scene.remove(s.mesh);
                 s.mesh.geometry.dispose();
                 s.mesh.material.dispose();
                 spheres.splice(i, 1);
 
-                // Spawna um novo obstáculo lá na frente mantendo o fluxo infinito
                 const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
                 spawnGlass(lastZ - 40);
                 break; 
             }
         }
 
-        // Limpeza de bolinhas antigas que caíram ou sumiram no horizonte
-        if (spheres[i] && (s.mesh.position.z < camera.position.z - 80 || s.mesh.position.y < -5)) {
+        if (spheres[i] && (s.mesh.position.z < camera.position.z - 80 || s.mesh.position.y < 0)) {
             scene.remove(s.mesh);
             s.mesh.geometry.dispose();
             s.mesh.material.dispose();
@@ -237,30 +244,25 @@ function animate() {
         }
     }
 
-    // 2. Atualiza e Anima os Estilhaços de Vidro Quebrados
+    // 2. Atualiza Cacos de Vidro
     for (let k = shards.length - 1; k >= 0; k--) {
         const shard = shards[k];
-        
-        // Move o pedaço baseado em sua direção física individual
         shard.mesh.position.add(shard.velocity);
-        shard.velocity.y += shard.gravity; // Gravidade agindo no vidro caindo
+        shard.velocity.y += shard.gravity; 
         
-        // Faz o pedacinho girar no ar enquanto cai
         shard.mesh.rotation.x += shard.rotationSpeed.x;
         shard.mesh.rotation.y += shard.rotationSpeed.y;
         shard.mesh.rotation.z += shard.rotationSpeed.z;
 
-        // Desbota o vidro devagar antes de apagar da memória
-        shard.life -= 0.015;
-        // Se mudarmos o material principal pode dar erro de opacidade por pedaço, então controlamos a escala ou sumiço
-        if (shard.life <= 0 || shard.mesh.position.y < -1) {
+        shard.life -= 0.02;
+        if (shard.life <= 0 || shard.mesh.position.y <= 0) {
             scene.remove(shard.mesh);
             shard.mesh.geometry.dispose();
             shards.splice(k, 1);
         }
     }
 
-    // 3. Remover vidros que o jogador ignorou e passaram batidos pela câmera
+    // 3. Limpa Vidros Passados
     for (let j = glasses.length - 1; j >= 0; j--) {
         if (glasses[j].mesh.position.z > camera.position.z + 2) {
             scene.remove(glasses[j].mesh);
@@ -272,9 +274,9 @@ function animate() {
         }
     }
 
-    // Reposiciona o túnel infinito
-    if (camera.position.z < tunnel.position.z - 100) {
-        tunnel.position.z -= 200;
+    // Move a estrutura do chão/grid infinitamente para acompanhar o jogador
+    if (camera.position.z < floorGroup.position.z + 300) {
+        floorGroup.position.z -= 200;
     }
 
     renderer.render(scene, camera);
