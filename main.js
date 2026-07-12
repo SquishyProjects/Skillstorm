@@ -42,17 +42,18 @@ camera.position.set(0, 2, 0);
 
 // --- Função para Criar Obstáculos de Vidro ---
 // Mudamos para um material ligeiramente menos transparente para garantir que você veja
+// --- Função para Criar Obstáculos de Vidro Corrigida ---
 const glassMaterial = new THREE.MeshStandardMaterial({
     color: 0x00ccff,
     transparent: true,
-    opacity: 0.8, 
+    opacity: 0.7, 
     roughness: 0.1,
-    metalness: 0.3,
+    metalness: 0.5,
     side: THREE.DoubleSide
 });
 
 function spawnGlass(zPos) {
-    // Dimensões fixas ligeiramente maiores para o teste inicial
+    // Dimensões fixas do vidro
     const width = 4;  
     const height = 5; 
     const depth = 0.3;                    
@@ -60,20 +61,32 @@ function spawnGlass(zPos) {
     const glassGeo = new THREE.BoxGeometry(width, height, depth);
     const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
 
-    // Centraliza um pouco mais na pista para interceptar o jogador
+    // Posiciona o obstáculo na pista
     const xPos = (Math.random() - 0.5) * 4; 
-    const yPos = height / 2; // Apoiado no chão
+    const yPos = height / 2; // Apoiado no chão do túnel (Y=0)
 
     glassMesh.position.set(xPos, yPos, zPos);
     scene.add(glassMesh);
 
-    // Caixa de colisão matemática
-    const boundingBox = new THREE.Box3().setFromObject(glassMesh);
+    // FIX: Criando a caixa de colisão manualmente com valores fixos
+    // Isso evita que o Three.js zere o tamanho do vidro por falta de processamento
+    const boundingBox = new THREE.Box3();
+    boundingBox.setFromCenterAndSize(
+        new THREE.Vector3(xPos, yPos, zPos),
+        new THREE.Vector3(width, height, depth)
+    );
 
     glasses.push({
         mesh: glassMesh,
         box: boundingBox
     });
+}
+
+// Garanta que esse loop rode DEPOIS de definir a função spawnGlass acima
+// Vamos resetar a fila inicial de vidros bem na sua frente
+glasses.length = 0; // Limpa qualquer lixo anterior
+for (let i = 0; i < 6; i++) {
+    spawnGlass(-25 - (i * 35)); // Primeiro vidro a 25 metros de distância, depois a cada 35m
 }
 
 // ATENÇÃO: Gerando os primeiros vidros bem mais perto da câmera inicial (Z = 0)
