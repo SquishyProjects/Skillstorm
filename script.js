@@ -12,63 +12,62 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// --- Iluminação ---
-const ambientLight = new THREE.AmbientLight(0x404040, 1.2);
+// --- Iluminação Melhorada ---
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Luz ambiente mais clara
 scene.add(ambientLight);
 
-// Luz direcional simulando o brilho dos vidros/neon
-const directionalLight = new THREE.DirectionalLight(0x00ffff, 2);
-directionalLight.position.set(5, 10, 2);
+const directionalLight = new THREE.DirectionalLight(0x00ffff, 2.5);
+directionalLight.position.set(0, 10, -10); // Posicionada ligeiramente à frente
 scene.add(directionalLight);
 
 // --- Variáveis de Controle do Jogo ---
 let ballCount = 25;
-const speed = 0.15; // Aumentei um pouquinho a velocidade para dar mais emoção
+const speed = 0.12; 
 const spheres = []; 
-const glasses = []; // Array que vai guardar os obstáculos de vidro ativos
+const glasses = []; 
 
-// --- Criação do Túnel (Cenário de Teste) ---
+// --- Criação do Túnel ---
 const tunnelGeometry = new THREE.BoxGeometry(20, 10, 500);
 tunnelGeometry.scale(-1, 1, 1); 
 const tunnelMaterial = new THREE.MeshStandardMaterial({
-    color: 0x111125,
+    color: 0x222244,
     wireframe: true
 });
 const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
 tunnel.position.z = -200;
 scene.add(tunnel);
 
+// Câmera começa em Z = 0
 camera.position.set(0, 2, 0);
 
 // --- Função para Criar Obstáculos de Vidro ---
-// Material do vidro: semi-transparente, azulado e bem brilhante
+// Mudamos para um material ligeiramente menos transparente para garantir que você veja
 const glassMaterial = new THREE.MeshStandardMaterial({
-    color: 0x00aaff,
+    color: 0x00ccff,
     transparent: true,
-    opacity: 0.6,
+    opacity: 0.8, 
     roughness: 0.1,
-    metalness: 0.1,
+    metalness: 0.3,
     side: THREE.DoubleSide
 });
 
 function spawnGlass(zPos) {
-    // Dimensões aleatórias para os painéis de vidro
-    const width = Math.random() * 4 + 2;  // largura entre 2 e 6
-    const height = Math.random() * 5 + 3; // altura entre 3 e 8
-    const depth = 0.2;                    // espessura fina como vidro
+    // Dimensões fixas ligeiramente maiores para o teste inicial
+    const width = 4;  
+    const height = 5; 
+    const depth = 0.3;                    
 
     const glassGeo = new THREE.BoxGeometry(width, height, depth);
     const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
 
-    // Posiciona em X (esquerda/direita aleatória) e Y (altura do chão)
-    const xPos = (Math.random() - 0.5) * 8; // variação entre -4 e 4
-    const yPos = height / 2;                // apoiado no chão do túnel
+    // Centraliza um pouco mais na pista para interceptar o jogador
+    const xPos = (Math.random() - 0.5) * 4; 
+    const yPos = height / 2; // Apoiado no chão
 
     glassMesh.position.set(xPos, yPos, zPos);
-    
     scene.add(glassMesh);
 
-    // Criamos uma caixa de colisão invisível para este vidro
+    // Caixa de colisão matemática
     const boundingBox = new THREE.Box3().setFromObject(glassMesh);
 
     glasses.push({
@@ -77,9 +76,10 @@ function spawnGlass(zPos) {
     });
 }
 
-// Inicializa os primeiros vidros no caminho do jogador
-for (let i = 1; i <= 5; i++) {
-    spawnGlass(-50 * i); // Spawna vidros a cada 50 unidades de distância
+// ATENÇÃO: Gerando os primeiros vidros bem mais perto da câmera inicial (Z = 0)
+// Eles vão aparecer em Z = -20, -45, -70, -95...
+for (let i = 0; i < 6; i++) {
+    spawnGlass(-20 - (i * 25)); 
 }
 
 // --- Sistema de Tiro (Raycasting) ---
@@ -97,9 +97,9 @@ window.addEventListener('pointerdown', (event) => {
 
     raycaster.setFromCamera(mouse, camera);
 
-    const ballGeo = new THREE.SphereGeometry(0.2, 16, 16); // Reduzi os segmentos para melhorar performance
+    const ballGeo = new THREE.SphereGeometry(0.2, 16, 16); 
     const ballMat = new THREE.MeshStandardMaterial({ 
-        color: 0xaaaaaa, 
+        color: 0xcccccc, 
         metalness: 0.9, 
         roughness: 0.1 
     });
@@ -117,7 +117,7 @@ window.addEventListener('pointerdown', (event) => {
         mesh: ball,
         velocity: direction,
         gravity: -0.004,
-        box: new THREE.Box3() // Cada bola ganha sua própria caixa de colisão
+        box: new THREE.Box3() 
     });
 
     scene.add(ball);
@@ -134,48 +134,41 @@ window.addEventListener('resize', () => {
 function animate() {
     requestAnimationFrame(animate);
 
-    // 1. Avança a câmera pelo corredor
+    // 1. Avança a câmera pelo corredor (Z fica cada vez mais negativo)
     camera.position.z -= speed;
 
-    // 2. Atualiza a trajetória e colisão das esferas
+    // 2. Atualiza as esferas e checa colisões
     for (let i = spheres.length - 1; i >= 0; i--) {
         const s = spheres[i];
         
         s.mesh.position.add(s.velocity);
         s.velocity.y += s.gravity; 
 
-        // Atualiza a caixa de colisão matemática da bola na nova posição
         s.box.setFromObject(s.mesh);
 
-        // Checar colisão da bola com cada vidro existente
         for (let j = glasses.length - 1; j >= 0; j--) {
             const g = glasses[j];
 
             if (s.box.intersectsBox(g.box)) {
-                // HOUVE COLISÃO! 💥
-                
-                // Remove o vidro da cena
+                // Colisão detectada!
                 scene.remove(g.mesh);
                 g.mesh.geometry.dispose();
                 glasses.splice(j, 1);
 
-                // Remove a bola que bateu
                 scene.remove(s.mesh);
                 s.mesh.geometry.dispose();
                 s.mesh.material.dispose();
                 spheres.splice(i, 1);
 
-                // Spawna um novo vidro lá na frente para o jogo continuar infinito
-                // Pega a posição do último vidro gerado e joga 50 unidades para frente
+                // Spawna o próximo lá na frente
                 const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
-                spawnGlass(lastZ - 50);
-
-                break; // Sai do loop de vidros já que esta bola sumiu
+                spawnGlass(lastZ - 30);
+                break; 
             }
         }
 
-        // Limpeza de memória: remove esferas antigas que sumiram no mapa
-        if (spheres[i] && (s.mesh.position.z < camera.position.z - 100 || s.mesh.position.y < -10)) {
+        // Limpa esferas que sumiram do mapa
+        if (spheres[i] && (s.mesh.position.z < camera.position.z - 80 || s.mesh.position.y < -10)) {
             scene.remove(s.mesh);
             s.mesh.geometry.dispose();
             s.mesh.material.dispose();
@@ -183,20 +176,21 @@ function animate() {
         }
     }
 
-    // 3. Remover vidros que o jogador já passou sem quebrar (Otimização)
+    // 3. Remover vidros que ficaram para trás da câmera
     for (let j = glasses.length - 1; j >= 0; j--) {
-        if (glasses[j].mesh.position.z > camera.position.z + 5) {
+        // Como a câmera se move para o Z negativo, se o vidro tiver um Z MAIOR que o da câmera, ele ficou para trás
+        if (glasses[j].mesh.position.z > camera.position.z) {
             scene.remove(glasses[j].mesh);
             glasses[j].mesh.geometry.dispose();
             glasses.splice(j, 1);
 
-            // Spawna um novo vidro na frente para manter o fluxo
+            // Cria um novo obstáculo adiante
             const lastZ = glasses.length > 0 ? glasses[glasses.length - 1].mesh.position.z : camera.position.z;
-            spawnGlass(lastZ - 50);
+            spawnGlass(lastZ - 30);
         }
     }
 
-    // Move o túnel para frente para simular um caminho infinito
+    // Move o túnel infinito
     if (camera.position.z < tunnel.position.z - 100) {
         tunnel.position.z -= 200;
     }
